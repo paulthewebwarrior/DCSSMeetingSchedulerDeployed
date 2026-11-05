@@ -35,71 +35,78 @@ $usersList = $stmtUsers->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Admin Dashboard - DCSS Meeting Scheduler</title>
+    <title>DCSS - Admin Portal</title>
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-    <header class="win-header-panel">
-        <div class="win-brand">
-            <img src="assets/dcss.jpg" alt="DCSS Logo" class="win-brand-logo" onerror="this.src='Resources/dcss.jpg'">
+    <header class="app-header">
+        <div class="header-brand">
+            <img src="assets/dcss.jpg" alt="DCSS" class="brand-logo" onerror="this.style.display='none'">
             <div>
-                <div class="win-title">Admin Dashboard</div>
-                <div class="win-subtitle">DCSS Meeting Scheduler System Administration</div>
+                <h1 class="brand-title">Admin Dashboard</h1>
+                <p class="brand-subtitle">DCSS Meeting Scheduler System Administration</p>
             </div>
         </div>
-        <div class="win-user-info">
-            <span class="win-badge"><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?> (Admin)</span>
-            <a href="logout.php" class="win-btn-logout" onclick="return confirm('Log out from Admin session?');">
+        <div class="header-user">
+            <div class="user-badge">
+                <span><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></span>
+                <span class="role-tag"><?= htmlspecialchars($user['role']) ?></span>
+            </div>
+            <a href="logout.php" class="btn-logout" onclick="return confirm('Log out from Admin session?');">
                 Log Out
             </a>
         </div>
     </header>
 
-    <div class="win-container">
-        <div class="win-section-header">
+    <main class="main-wrapper">
+        <div class="section-banner">
             <h2>Administrative Overview</h2>
             <p>System metrics, user accounts, and appointment tracking</p>
         </div>
 
-        <div class="win-metric-cards">
-            <div class="win-card-panel card-total">
-                <div class="win-card-label">Total Users</div>
-                <div class="win-card-value"><?= (int)$totalUsers ?></div>
+        <div class="kpi-grid">
+            <div class="kpi-card kpi-total">
+                <div class="kpi-title">Total Users</div>
+                <div class="kpi-value"><?= (int)$totalUsers ?></div>
             </div>
-            <div class="win-card-panel card-approved">
-                <div class="win-card-label">Faculty Members</div>
-                <div class="win-card-value"><?= (int)$facultyCount ?></div>
+            <div class="kpi-card kpi-approved">
+                <div class="kpi-title">Faculty Members</div>
+                <div class="kpi-value"><?= (int)$facultyCount ?></div>
             </div>
-            <div class="win-card-panel card-total">
-                <div class="win-card-label">Registered Students</div>
-                <div class="win-card-value"><?= (int)$studentCount ?></div>
+            <div class="kpi-card kpi-upcoming">
+                <div class="kpi-title">Registered Students</div>
+                <div class="kpi-value"><?= (int)$studentCount ?></div>
             </div>
-            <div class="win-card-panel card-pending">
-                <div class="win-card-label">Pending Appointments</div>
-                <div class="win-card-value"><?= (int)$pendingAppts ?></div>
+            <div class="kpi-card kpi-today">
+                <div class="kpi-title">Total Appointments</div>
+                <div class="kpi-value"><?= (int)$totalAppts ?></div>
+            </div>
+            <div class="kpi-card kpi-pending">
+                <div class="kpi-title">Pending Approvals</div>
+                <div class="kpi-value"><?= (int)$pendingAppts ?></div>
             </div>
         </div>
 
-        <div class="win-groupbox">
-            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
-                <div class="win-groupbox-title" style="margin-bottom:0; border:none; padding:0;">User Management</div>
-                <form method="GET" action="admin.php" style="display:flex; gap:6px; flex-wrap:wrap;">
-                    <input type="text" name="user_search" class="win-textbox" placeholder="Search name or email..." value="<?= htmlspecialchars($userSearch) ?>" style="width:220px;">
-                    <select name="role_filter" class="win-combobox" onchange="this.form.submit()">
+        <div class="panel-card">
+            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
+                <h3 class="panel-card-title" style="margin:0; border:none; padding:0;">User Management</h3>
+                <form method="GET" action="admin.php" style="display:flex; gap:8px; flex-wrap:wrap;">
+                    <input type="text" name="user_search" class="input-search" placeholder="Search name or email..." value="<?= htmlspecialchars($userSearch) ?>">
+                    <select name="role_filter" class="select-filter" onchange="this.form.submit()">
                         <option value="All" <?= $roleFilter === 'All' ? 'selected' : '' ?>>All Roles</option>
                         <option value="Admin" <?= $roleFilter === 'Admin' ? 'selected' : '' ?>>Admin</option>
                         <option value="Faculty" <?= $roleFilter === 'Faculty' ? 'selected' : '' ?>>Faculty</option>
                         <option value="Student" <?= $roleFilter === 'Student' ? 'selected' : '' ?>>Student</option>
                     </select>
-                    <button type="submit" class="win-btn win-btn-blue">Filter</button>
+                    <button type="submit" class="btn btn-primary">Filter</button>
                     <?php if (!empty($userSearch) || $roleFilter !== 'All'): ?>
-                        <a href="admin.php" class="win-btn win-btn-gray">Reset</a>
+                        <a href="admin.php" class="btn btn-secondary">Reset</a>
                     <?php endif; ?>
                 </form>
             </div>
 
-            <div class="win-datagrid-wrap">
-                <table class="win-datagrid">
+            <div class="table-responsive">
+                <table class="data-table">
                     <thead>
                         <tr>
                             <th>User ID</th>
@@ -114,18 +121,18 @@ $usersList = $stmtUsers->fetchAll();
                     <tbody>
                         <?php foreach ($usersList as $u): ?>
                             <tr>
-                                <td>#<?= htmlspecialchars($u['user_id']) ?></td>
-                                <td><strong><?= htmlspecialchars($u['first_name'] . ' ' . $u['last_name']) ?></strong></td>
+                                <td><strong>#<?= htmlspecialchars($u['user_id']) ?></strong></td>
+                                <td><?= htmlspecialchars($u['first_name'] . ' ' . $u['last_name']) ?></td>
                                 <td><?= htmlspecialchars($u['ue_email']) ?></td>
                                 <td>
-                                    <span class="win-status-badge status-completed">
+                                    <span class="badge" style="background:#e0f2fe; color:#0369a1;">
                                         <?= htmlspecialchars($u['role']) ?>
                                     </span>
                                 </td>
                                 <td><?= htmlspecialchars($u['id_number'] ?: '-') ?></td>
                                 <td><?= htmlspecialchars($u['program_or_dept'] ?: '-') ?></td>
                                 <td>
-                                    <span class="win-status-badge status-<?= $u['is_active'] ? 'approved' : 'declined' ?>">
+                                    <span class="badge badge-<?= $u['is_active'] ? 'approved' : 'declined' ?>">
                                         <?= $u['is_active'] ? 'Active' : 'Disabled' ?>
                                     </span>
                                 </td>
@@ -135,6 +142,7 @@ $usersList = $stmtUsers->fetchAll();
                 </table>
             </div>
         </div>
-    </div>
+    </main>
 </body>
 </html>
+
