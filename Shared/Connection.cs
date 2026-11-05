@@ -1,4 +1,4 @@
-﻿using MySqlConnector;
+using MySqlConnector;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -6,7 +6,8 @@ using System.Text;
 namespace DCSSMeetingScheduler.Shared {
     public class Connection {
 
-        private static string connectionString = "server=cim-1101.c7uouqm8yqvw.ap-southeast-2.rds.amazonaws.com;database=dcss_db;username=admin;pwd=PaulTheWebWarrior;";
+        private static string connectionString = Environment.GetEnvironmentVariable("DCSS_DB_CONNECTION_STRING")
+            ?? throw new InvalidOperationException("Set the DCSS_DB_CONNECTION_STRING environment variable before connecting to the database.");
 
         public static MySqlConnection GetConnection() {
             MySqlConnection conn = new MySqlConnection(connectionString);
