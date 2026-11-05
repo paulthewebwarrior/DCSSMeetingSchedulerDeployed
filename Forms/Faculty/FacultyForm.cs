@@ -1,9 +1,6 @@
 using System;
-using System.Collections.Generic;
-using System.ComponentModel;
 using System.Data;
 using System.Drawing;
-using System.Text;
 using System.Windows.Forms;
 using DCSSMeetingScheduler;
 using DCSSMeetingScheduler.Shared;
@@ -33,11 +30,124 @@ namespace DCSSMeetingScheduler.Faculty
             LoadFacultyProfile();
             LoadApplicationInfo();
             InitializePreferences();
+            InitializeRequestFilters();
             LoadAvailability();
+            LoadRequests();
+            LoadHomePage();
+
+            tabFaculty.SelectedIndexChanged += tabFaculty_SelectedIndexChanged;
 
             if (defaultTabIndex >= 0 && defaultTabIndex < tabFaculty.TabCount)
             {
                 tabFaculty.SelectedIndex = defaultTabIndex;
+            }
+        }
+
+        private void tabFaculty_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (tabFaculty.SelectedIndex == 0)
+            {
+                LoadHomePage();
+            }
+            else if (tabFaculty.SelectedIndex == 1)
+            {
+                LoadRequests();
+            }
+            else if (tabFaculty.SelectedIndex == 2)
+            {
+                LoadAvailability();
+            }
+        }
+
+        private void LoadHomePage()
+        {
+            UpdateDashboardCounts();
+            LoadRecentMeetings();
+            UpdateHomeNotifications();
+        }
+
+        private void LoadRecentMeetings()
+        {
+            if (loggedInUser == null)
+            {
+                return;
+            }
+
+            try
+            {
+                using (MySqlConnection conn = Connection.GetConnection())
+                {
+                    string query = "SELECT a.appointment_id, " +
+                                   "CONCAT(u.first_name, ' ', u.last_name) AS student_name, " +
+                                   "DATE_FORMAT(a.meeting_datetime, '%b %d, %Y') AS meeting_date, " +
+                                   "DATE_FORMAT(a.meeting_datetime, '%h:%i %p') AS start_time, " +
+                                   "IFNULL(DATE_FORMAT(a.meeting_end_datetime, '%h:%i %p'), 'N/A') AS end_time, " +
+                                   "a.status, " +
+                                   "IFNULL(a.faculty_remarks, '') AS faculty_remarks " +
+                                   "FROM appointments a " +
+                                   "INNER JOIN users u ON a.student_id = u.user_id " +
+                                   "WHERE a.faculty_id = @facultyId " +
+                                   "ORDER BY a.meeting_datetime DESC " +
+                                   "LIMIT 10";
+
+                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
+
+                        using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
+                        {
+                            DataTable dt = new DataTable();
+                            da.Fill(dt);
+
+                            dataGridView2.AutoGenerateColumns = false;
+                            request_id.DataPropertyName = "appointment_id";
+                            Stud_Name.DataPropertyName = "student_name";
+                            Date.DataPropertyName = "meeting_date";
+                            Start.DataPropertyName = "start_time";
+                            End.DataPropertyName = "end_time";
+                            MStatus.DataPropertyName = "status";
+                            FRemarks.DataPropertyName = "faculty_remarks";
+                            dataGridView2.DataSource = dt;
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error loading recent meetings: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void UpdateHomeNotifications()
+        {
+            if (loggedInUser == null)
+            {
+                return;
+            }
+
+            try
+            {
+                using (MySqlConnection conn = Connection.GetConnection())
+                {
+                    string query = "SELECT COUNT(*) FROM appointments WHERE faculty_id = @facultyId AND status = 'Pending'";
+                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
+                        int pendingCount = Convert.ToInt32(cmd.ExecuteScalar());
+
+                        if (pendingCount > 0)
+                        {
+                            lblNotifs.Text = "You have " + pendingCount + " pending meeting request(s) awaiting your review.";
+                        }
+                        else
+                        {
+                            lblNotifs.Text = "You have no pending meeting requests.";
+                        }
+                    }
+                }
+            }
+            catch
+            {
             }
         }
 
@@ -76,38 +186,6 @@ namespace DCSSMeetingScheduler.Faculty
             }
         }
 
-        private void LoadApplicationInfo()
-        {
-            lblVersionValue.Text = "1.0.0";
-            lblDatabaseValue.Text = "Connected (dcss_db)";
-            lblLastLoginValue.Text = DateTime.Now.ToString("MMM dd, yyyy hh:mm tt");
-        }
-
-        private void InitializePreferences()
-        {
-            cmbDefaultTab.DropDownStyle = ComboBoxStyle.DropDownList;
-            cmbDefaultTab.Items.Clear();
-            cmbDefaultTab.Items.Add("Home");
-            cmbDefaultTab.Items.Add("Request");
-            cmbDefaultTab.Items.Add("Availability");
-            cmbDefaultTab.Items.Add("Setting");
-
-            if (defaultTabIndex >= 0 && defaultTabIndex < cmbDefaultTab.Items.Count)
-            {
-                cmbDefaultTab.SelectedIndex = defaultTabIndex;
-            }
-            else
-            {
-                cmbDefaultTab.SelectedIndex = 0;
-            }
-
-            chkEmailNotif.Checked = true;
-            chkDesktopNotif.Checked = true;
-            chkConsultationReminder.Checked = true;
-            chkShowRequestDashboard.Checked = true;
-            chkShowRecentRequestDashboard.Checked = true;
-        }
-
         private void btnEditProfile_Click(object sender, EventArgs e)
         {
             if (btnEditProfile.Text == "Edit Profile")
@@ -115,6 +193,7 @@ namespace DCSSMeetingScheduler.Faculty
                 txtFacultyName.ReadOnly = false;
                 txtDepartment.ReadOnly = false;
                 txtFacultyName.Focus();
+
                 btnEditProfile.Text = "Save Profile";
                 btnEditProfile.BackColor = Color.ForestGreen;
             }
@@ -154,12 +233,14 @@ namespace DCSSMeetingScheduler.Faculty
                         using (MySqlConnection conn = Connection.GetConnection())
                         {
                             string updateQuery = "UPDATE users SET first_name = @firstName, last_name = @lastName, program_or_dept = @department WHERE user_id = @userId";
+
                             using (MySqlCommand cmd = new MySqlCommand(updateQuery, conn))
                             {
                                 cmd.Parameters.AddWithValue("@firstName", firstName);
                                 cmd.Parameters.AddWithValue("@lastName", lastName);
                                 cmd.Parameters.AddWithValue("@department", department);
                                 cmd.Parameters.AddWithValue("@userId", loggedInUser.UserId);
+
                                 cmd.ExecuteNonQuery();
                             }
                         }
@@ -171,6 +252,7 @@ namespace DCSSMeetingScheduler.Faculty
 
                     txtFacultyName.ReadOnly = true;
                     txtDepartment.ReadOnly = true;
+
                     btnEditProfile.Text = "Edit Profile";
                     btnEditProfile.BackColor = Color.SeaGreen;
 
@@ -189,7 +271,9 @@ namespace DCSSMeetingScheduler.Faculty
             string newPassword = txtNewPassword.Text.Trim();
             string confirmPassword = txtConfirmPassword.Text.Trim();
 
-            if (string.IsNullOrWhiteSpace(currentPassword) || string.IsNullOrWhiteSpace(newPassword) || string.IsNullOrWhiteSpace(confirmPassword))
+            if (string.IsNullOrWhiteSpace(currentPassword) ||
+                string.IsNullOrWhiteSpace(newPassword) ||
+                string.IsNullOrWhiteSpace(confirmPassword))
             {
                 MessageBox.Show("Please fill in all password fields.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
                 return;
@@ -230,10 +314,12 @@ namespace DCSSMeetingScheduler.Faculty
                     using (MySqlConnection conn = Connection.GetConnection())
                     {
                         string updatePasswordQuery = "UPDATE users SET user_password = @password, must_change_password = 0 WHERE user_id = @userId";
+
                         using (MySqlCommand cmd = new MySqlCommand(updatePasswordQuery, conn))
                         {
                             cmd.Parameters.AddWithValue("@password", newPassword);
                             cmd.Parameters.AddWithValue("@userId", loggedInUser.UserId);
+
                             cmd.ExecuteNonQuery();
                         }
                     }
@@ -243,6 +329,7 @@ namespace DCSSMeetingScheduler.Faculty
                 }
 
                 MessageBox.Show("Password changed successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                 txtCurrentPassword.Clear();
                 txtNewPassword.Clear();
                 txtConfirmPassword.Clear();
@@ -251,6 +338,39 @@ namespace DCSSMeetingScheduler.Faculty
             {
                 MessageBox.Show("Database Error: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
+        }
+
+        private void LoadApplicationInfo()
+        {
+            lblVersionValue.Text = "1.0.0";
+            lblDatabaseValue.Text = "Connected (dcss_db)";
+            lblLastLoginValue.Text = DateTime.Now.ToString("MMM dd, yyyy hh:mm tt");
+        }
+
+        private void InitializePreferences()
+        {
+            cmbDefaultTab.DropDownStyle = ComboBoxStyle.DropDownList;
+            cmbDefaultTab.Items.Clear();
+            cmbDefaultTab.Items.Add("Home");
+            cmbDefaultTab.Items.Add("Request");
+            cmbDefaultTab.Items.Add("Availability");
+            cmbDefaultTab.Items.Add("Setting");
+
+            if (defaultTabIndex >= 0 && defaultTabIndex < cmbDefaultTab.Items.Count)
+            {
+                cmbDefaultTab.SelectedIndex = defaultTabIndex;
+            }
+            else
+            {
+                cmbDefaultTab.SelectedIndex = 0;
+            }
+
+            chkEmailNotif.Checked = true;
+            chkDesktopNotif.Checked = true;
+            chkConsultationReminder.Checked = true;
+
+            chkShowRequestDashboard.Checked = true;
+            chkShowRecentRequestDashboard.Checked = true;
         }
 
         private void btnSavePreferences_Click(object sender, EventArgs e)
@@ -294,36 +414,273 @@ namespace DCSSMeetingScheduler.Faculty
             }
         }
 
-        private void Dashboard_FormClosed(object? sender, FormClosedEventArgs e)
+        private void InitializeRequestFilters()
         {
-            if (Owner is LoginForm loginForm)
-                loginForm.DashboardClosed(this);
+            comboBox2.DropDownStyle = ComboBoxStyle.DropDownList;
+            comboBox2.Items.Clear();
+            comboBox2.Items.Add("All");
+            comboBox2.Items.Add("Pending");
+            comboBox2.Items.Add("Approved");
+            comboBox2.Items.Add("Declined");
+            comboBox2.Items.Add("Completed");
+            comboBox2.SelectedIndex = 0;
+
+            button2.Click += button2_Click;
+            button3.Click += button3_Click;
+            button4.Click += button4_Click;
+            btnRefresh.Click += btnRefresh_Click;
+            textBox3.TextChanged += textBox3_TextChanged;
+            comboBox2.SelectedIndexChanged += comboBox2_SelectedIndexChanged;
         }
 
-        private void btnLogout_Click(object sender, EventArgs e)
+        private void LoadRequests()
         {
-            DialogResult result = MessageBox.Show("Are you sure you want to log out?", "Log Out", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
-            if (result == DialogResult.Yes)
+            if (loggedInUser == null)
             {
-                DialogResult = DialogResult.Retry;
-                Close();
+                return;
+            }
+
+            string search = textBox3.Text.Trim();
+            string statusFilter = comboBox2.SelectedItem != null ? comboBox2.SelectedItem.ToString()! : "All";
+
+            try
+            {
+                using (MySqlConnection conn = Connection.GetConnection())
+                {
+                    string query = "SELECT a.appointment_id, " +
+                                   "CONCAT(u.first_name, ' ', u.last_name) AS student_name, " +
+                                   "IFNULL(u.program_or_dept, 'N/A') AS program_or_dept, " +
+                                   "a.purpose, " +
+                                   "DATE_FORMAT(a.meeting_datetime, '%b %d, %Y %h:%i %p') AS request_datetime, " +
+                                   "a.status, " +
+                                   "IFNULL(a.faculty_remarks, '') AS faculty_remarks " +
+                                   "FROM appointments a " +
+                                   "INNER JOIN users u ON a.student_id = u.user_id " +
+                                   "WHERE a.faculty_id = @facultyId";
+
+                    if (!string.IsNullOrWhiteSpace(statusFilter) && statusFilter != "All")
+                    {
+                        query += " AND a.status = @status";
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(search))
+                    {
+                        query += " AND (u.first_name LIKE @search OR u.last_name LIKE @search OR CONCAT(u.first_name, ' ', u.last_name) LIKE @search OR u.program_or_dept LIKE @search OR a.purpose LIKE @search)";
+                    }
+
+                    query += " ORDER BY a.meeting_datetime DESC";
+
+                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
+
+                        if (!string.IsNullOrWhiteSpace(statusFilter) && statusFilter != "All")
+                        {
+                            cmd.Parameters.AddWithValue("@status", statusFilter);
+                        }
+
+                        if (!string.IsNullOrWhiteSpace(search))
+                        {
+                            cmd.Parameters.AddWithValue("@search", "%" + search + "%");
+                        }
+
+                        using (MySqlDataAdapter da = new MySqlDataAdapter(cmd))
+                        {
+                            DataTable dt = new DataTable();
+                            da.Fill(dt);
+
+                            Requests.AutoGenerateColumns = false;
+                            Req_ID.DataPropertyName = "appointment_id";
+                            Sname.DataPropertyName = "student_name";
+                            Subj.DataPropertyName = "program_or_dept";
+                            Purp.DataPropertyName = "purpose";
+                            D_and_T.DataPropertyName = "request_datetime";
+                            Stat.DataPropertyName = "status";
+                            FacultyRem.DataPropertyName = "faculty_remarks";
+                            Requests.DataSource = dt;
+                        }
+                    }
+                }
+
+                UpdateDashboardCounts();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error loading requests: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
 
-
-        private void comboBox1_SelectedIndexChanged_1(object sender, EventArgs e)
+        private void UpdateDashboardCounts()
         {
+            if (loggedInUser == null)
+            {
+                return;
+            }
 
+            try
+            {
+                using (MySqlConnection conn = Connection.GetConnection())
+                {
+                    string query = "SELECT " +
+                                   "COUNT(*) AS total_count, " +
+                                   "COUNT(CASE WHEN status = 'Pending' THEN 1 END) AS pending_count, " +
+                                   "COUNT(CASE WHEN status = 'Approved' THEN 1 END) AS approved_count, " +
+                                   "COUNT(CASE WHEN status = 'Declined' THEN 1 END) AS declined_count, " +
+                                   "COUNT(CASE WHEN status = 'Approved' AND DATE(meeting_datetime) = CURDATE() THEN 1 END) AS today_count, " +
+                                   "COUNT(CASE WHEN status = 'Approved' AND meeting_datetime >= NOW() THEN 1 END) AS upcoming_count " +
+                                   "FROM appointments WHERE faculty_id = @facultyId";
+
+                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
+                        using (MySqlDataReader reader = cmd.ExecuteReader())
+                        {
+                            if (reader.Read())
+                            {
+                                string total = reader["total_count"].ToString() ?? "0";
+                                string pending = reader["pending_count"].ToString() ?? "0";
+                                string approved = reader["approved_count"].ToString() ?? "0";
+                                string declined = reader["declined_count"].ToString() ?? "0";
+                                string today = reader["today_count"].ToString() ?? "0";
+                                string upcoming = reader["upcoming_count"].ToString() ?? "0";
+
+                                lblTotal.Text = total;
+                                lblPendingTotal.Text = pending;
+                                lblApprovedTotal.Text = approved;
+                                lblDeclinedTotal.Text = declined;
+                                lblTotalMeeting.Text = today;
+                                lblTotalUpMeet.Text = upcoming;
+
+                                label12.Text = total;
+                                label13.Text = pending;
+                                label14.Text = approved;
+                                label15.Text = declined;
+                            }
+                        }
+                    }
+                }
+            }
+            catch
+            {
+            }
         }
 
-        private void label2_Click(object sender, EventArgs e)
+        private int GetSelectedRequestId()
         {
+            if (Requests.CurrentRow != null && Requests.CurrentRow.Index >= 0)
+            {
+                object? val = Requests.CurrentRow.Cells["Req_ID"].Value;
+                if (val != null && int.TryParse(val.ToString(), out int id))
+                {
+                    return id;
+                }
+            }
 
+            if (dataGridView2.CurrentRow != null && dataGridView2.CurrentRow.Index >= 0)
+            {
+                object? val = dataGridView2.CurrentRow.Cells["request_id"].Value;
+                if (val != null && int.TryParse(val.ToString(), out int id))
+                {
+                    return id;
+                }
+            }
+
+            return -1;
         }
 
-        private void dateTimePicker1_ValueChanged(object sender, EventArgs e)
+        private void UpdateRequestStatus(int appointmentId, string status)
         {
+            if (loggedInUser == null)
+            {
+                return;
+            }
 
+            try
+            {
+                using (MySqlConnection conn = Connection.GetConnection())
+                {
+                    string query = "UPDATE appointments SET status = @status, is_student_notified = 0 WHERE appointment_id = @id AND faculty_id = @facultyId";
+                    using (MySqlCommand cmd = new MySqlCommand(query, conn))
+                    {
+                        cmd.Parameters.AddWithValue("@status", status);
+                        cmd.Parameters.AddWithValue("@id", appointmentId);
+                        cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
+                        cmd.ExecuteNonQuery();
+                    }
+                }
+
+                MessageBox.Show("Request status updated to " + status + "!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                LoadRequests();
+                LoadHomePage();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error updating request: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
+        }
+
+        private void button2_Click(object? sender, EventArgs e)
+        {
+            int id = GetSelectedRequestId();
+            if (id == -1)
+            {
+                MessageBox.Show("Please select a request first.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            DialogResult result = MessageBox.Show("Are you sure you want to approve this request?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
+            {
+                UpdateRequestStatus(id, "Approved");
+            }
+        }
+
+        private void button3_Click(object? sender, EventArgs e)
+        {
+            int id = GetSelectedRequestId();
+            if (id == -1)
+            {
+                MessageBox.Show("Please select a request first.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            DialogResult result = MessageBox.Show("Are you sure you want to decline this request?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
+            {
+                UpdateRequestStatus(id, "Declined");
+            }
+        }
+
+        private void button4_Click(object? sender, EventArgs e)
+        {
+            int id = GetSelectedRequestId();
+            if (id == -1)
+            {
+                MessageBox.Show("Please select a request first.", "Notice", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                return;
+            }
+
+            DialogResult result = MessageBox.Show("Mark this meeting as completed?", "Confirm", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            if (result == DialogResult.Yes)
+            {
+                UpdateRequestStatus(id, "Completed");
+            }
+        }
+
+        private void textBox3_TextChanged(object? sender, EventArgs e)
+        {
+            LoadRequests();
+        }
+
+        private void comboBox2_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            LoadRequests();
+        }
+
+        private void btnRefresh_Click(object? sender, EventArgs e)
+        {
+            LoadHomePage();
+            LoadRequests();
         }
 
         private void LoadAvailability(string search = "")
@@ -337,7 +694,13 @@ namespace DCSSMeetingScheduler.Faculty
             {
                 using (MySqlConnection conn = Connection.GetConnection())
                 {
-                    string query = "SELECT availability_id, days AS 'Day', TIME_FORMAT(start_time, '%h:%i %p') AS 'Start Time', TIME_FORMAT(end_time, '%h:%i %p') AS 'End Time', location AS 'Location' FROM faculty_availability WHERE faculty_id = @facultyId";
+                    string query = "SELECT availability_id, " +
+                                   "days AS 'Day', " +
+                                   "TIME_FORMAT(start_time, '%h:%i %p') AS 'Start Time', " +
+                                   "TIME_FORMAT(end_time, '%h:%i %p') AS 'End Time', " +
+                                   "location AS 'Location' " +
+                                   "FROM faculty_availability " +
+                                   "WHERE faculty_id = @facultyId";
 
                     if (!string.IsNullOrWhiteSpace(search))
                     {
@@ -361,10 +724,10 @@ namespace DCSSMeetingScheduler.Faculty
                             da.Fill(dt);
                             dataGridView1.DataSource = dt;
 
-                            DataGridViewColumn? col = dataGridView1.Columns["availability_id"];
-                            if (col != null)
+                            DataGridViewColumn? idColumn = dataGridView1.Columns["availability_id"];
+                            if (idColumn != null)
                             {
-                                col.Visible = false;
+                                idColumn.Visible = false;
                             }
                         }
                     }
@@ -413,7 +776,9 @@ namespace DCSSMeetingScheduler.Faculty
                 {
                     if (selectedAvailabilityId == -1)
                     {
-                        string insertQuery = "INSERT INTO faculty_availability (faculty_id, days, start_time, end_time, location) VALUES (@facultyId, @days, @startTime, @endTime, @location)";
+                        string insertQuery = "INSERT INTO faculty_availability (faculty_id, days, start_time, end_time, location) " +
+                                             "VALUES (@facultyId, @days, @startTime, @endTime, @location)";
+
                         using (MySqlCommand cmd = new MySqlCommand(insertQuery, conn))
                         {
                             cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
@@ -421,6 +786,7 @@ namespace DCSSMeetingScheduler.Faculty
                             cmd.Parameters.AddWithValue("@startTime", startTime.ToString(@"hh\:mm\:ss"));
                             cmd.Parameters.AddWithValue("@endTime", endTime.ToString(@"hh\:mm\:ss"));
                             cmd.Parameters.AddWithValue("@location", location);
+
                             cmd.ExecuteNonQuery();
                         }
 
@@ -428,7 +794,10 @@ namespace DCSSMeetingScheduler.Faculty
                     }
                     else
                     {
-                        string updateQuery = "UPDATE faculty_availability SET days = @days, start_time = @startTime, end_time = @endTime, location = @location WHERE availability_id = @id AND faculty_id = @facultyId";
+                        string updateQuery = "UPDATE faculty_availability " +
+                                             "SET days = @days, start_time = @startTime, end_time = @endTime, location = @location " +
+                                             "WHERE availability_id = @id AND faculty_id = @facultyId";
+
                         using (MySqlCommand cmd = new MySqlCommand(updateQuery, conn))
                         {
                             cmd.Parameters.AddWithValue("@days", day);
@@ -437,6 +806,7 @@ namespace DCSSMeetingScheduler.Faculty
                             cmd.Parameters.AddWithValue("@location", location);
                             cmd.Parameters.AddWithValue("@id", selectedAvailabilityId);
                             cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
+
                             cmd.ExecuteNonQuery();
                         }
 
@@ -512,7 +882,13 @@ namespace DCSSMeetingScheduler.Faculty
                 return;
             }
 
-            DialogResult result = MessageBox.Show("Are you sure you want to delete this schedule?", "Delete Confirmation", MessageBoxButtons.YesNo, MessageBoxIcon.Question);
+            DialogResult result = MessageBox.Show(
+                "Are you sure you want to delete this schedule?",
+                "Delete Confirmation",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
+
             if (result == DialogResult.Yes)
             {
                 int id = Convert.ToInt32(dataGridView1.CurrentRow.Cells["availability_id"].Value);
@@ -522,15 +898,18 @@ namespace DCSSMeetingScheduler.Faculty
                     using (MySqlConnection conn = Connection.GetConnection())
                     {
                         string deleteQuery = "DELETE FROM faculty_availability WHERE availability_id = @id AND faculty_id = @facultyId";
+
                         using (MySqlCommand cmd = new MySqlCommand(deleteQuery, conn))
                         {
                             cmd.Parameters.AddWithValue("@id", id);
                             cmd.Parameters.AddWithValue("@facultyId", loggedInUser.UserId);
+
                             cmd.ExecuteNonQuery();
                         }
                     }
 
                     MessageBox.Show("Consultation hours deleted successfully!", "Success", MessageBoxButtons.OK, MessageBoxIcon.Information);
+
                     ClearAvailabilityInputs();
                     LoadAvailability();
                 }
@@ -551,98 +930,48 @@ namespace DCSSMeetingScheduler.Faculty
             LoadAvailability(textBox2.Text);
         }
 
-        private void dataGridView1_CellClick(object sender, DataGridViewCellEventArgs e)
-        {
-        }
-
         private void AvailabilityPage_Click(object sender, EventArgs e)
         {
             LoadAvailability();
         }
 
-        private void groupBox2_Enter(object sender, EventArgs e)
+        private void btnLogout_Click(object sender, EventArgs e)
         {
+            DialogResult result = MessageBox.Show(
+                "Are you sure you want to log out?",
+                "Log Out",
+                MessageBoxButtons.YesNo,
+                MessageBoxIcon.Question
+            );
 
+            if (result == DialogResult.Yes)
+            {
+                DialogResult = DialogResult.Retry;
+                Close();
+            }
         }
 
-        private void label13_Click(object sender, EventArgs e)
+        private void Dashboard_FormClosed(object? sender, FormClosedEventArgs e)
         {
-
-        }
-
-        private void label7_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label1_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void lblTotalUpMeet_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void dgvRecentRequest_CellContentClick(object sender, DataGridViewCellEventArgs e)
-        {
-
-        }
-
-        private void label2_Click_1(object sender, EventArgs e)
-        {
-
-        }
-
-        private void pnlFacultyProfile_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        private void dgvRecentRequest_CellContentClick_1(object sender, DataGridViewCellEventArgs e)
-        {
-
-        }
-
-        private void txtFacultyName_TextChanged(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label7_Click_1(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label2_Click_2(object sender, EventArgs e)
-        {
-
+            if (Owner is LoginForm loginForm)
+            {
+                loginForm.DashboardClosed(this);
+            }
         }
 
         private void tabRequest_Click(object sender, EventArgs e)
         {
-
-        }
-
-        private void panel7_Paint(object sender, PaintEventArgs e)
-        {
-
-        }
-
-        private void label9_Click(object sender, EventArgs e)
-        {
-
-        }
-
-        private void label17_Click(object sender, EventArgs e)
-        {
-
+            LoadRequests();
         }
 
         private void tabHome_Click(object sender, EventArgs e)
         {
+            LoadHomePage();
+        }
 
+        private void button2_Click_1(object sender, EventArgs e)
+        {
+            button2_Click(sender, e);
         }
     }
 }
