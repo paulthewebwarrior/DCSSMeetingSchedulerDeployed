@@ -973,5 +973,10 @@ namespace DCSSMeetingScheduler.Faculty
         {
             button2_Click(sender, e);
         }
+
+        private void pnlHeader_Paint(object sender, PaintEventArgs e)
+        {
+
+        }
     }
 }
