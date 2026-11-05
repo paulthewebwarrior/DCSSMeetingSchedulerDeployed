@@ -1,0 +1,118 @@
+{
+  "project": {
+    "name": "DCSS Meeting Scheduler",
+    "slug": "dcss-meeting-scheduler",
+    "version": "1.0.0",
+    "type": "native-php",
+    "author": "Department of Computer Studies and Systems (DCSS)"
+  },
+  "hostinger": {
+    "target_directory": "public_html",
+    "php_version": "8.2",
+    "required_extensions": [
+      "pdo",
+      "pdo_mysql",
+      "session",
+      "mbstring",
+      "json"
+    ],
+    "environment": {
+      "DB_HOST": "localhost",
+      "DB_PORT": "3306",
+      "DB_NAME": "u312211237_dcss_db",
+      "DB_USER": "u312211237_dbuser",
+      "DB_PASS": "Paulgabrielcamacho21"
+    }
+  },
+  "files_to_upload": [
+    {
+      "source": "web/index.php",
+      "destination": "public_html/index.php",
+      "description": "Main entry point and role-based redirect router"
+    },
+    {
+      "source": "web/login.php",
+      "destination": "public_html/login.php",
+      "description": "Authentication screen with UE credentials validation"
+    },
+    {
+      "source": "web/signup.php",
+      "destination": "public_html/signup.php",
+      "description": "Account registration for Students and Faculty"
+    },
+    {
+      "source": "web/logout.php",
+      "destination": "public_html/logout.php",
+      "description": "Destroys session and returns to login page"
+    },
+    {
+      "source": "web/faculty.php",
+      "destination": "public_html/faculty.php",
+      "description": "Faculty Portal with KPIs, requests, consultation hours, and settings"
+    },
+    {
+      "source": "web/student.php",
+      "destination": "public_html/student.php",
+      "description": "Student Portal with booking, request tracking, and profile"
+    },
+    {
+      "source": "web/admin.php",
+      "destination": "public_html/admin.php",
+      "description": "Admin Dashboard with user management and overall metrics"
+    },
+    {
+      "source": "web/config/database.php",
+      "destination": "public_html/config/database.php",
+      "description": "Database connection configuration"
+    },
+    {
+      "source": "web/includes/Database.php",
+      "destination": "public_html/includes/Database.php",
+      "description": "PDO MySQL connection singleton"
+    },
+    {
+      "source": "web/includes/Auth.php",
+      "destination": "public_html/includes/Auth.php",
+      "description": "Session auth guard and role permission checker"
+    },
+    {
+      "source": "web/includes/Flash.php",
+      "destination": "public_html/includes/Flash.php",
+      "description": "Alert banner notification helper"
+    },
+    {
+      "source": "web/css/app.css",
+      "destination": "public_html/css/app.css",
+      "description": "Responsive styling maintaining the original UI design"
+    },
+    {
+      "source": "web/assets/",
+      "destination": "public_html/assets/",
+      "description": "University and Department logos"
+    },
+    {
+      "source": "web/.htaccess",
+      "destination": "public_html/.htaccess",
+      "description": "Apache protection rules for config and includes folders"
+    }
+  ],
+  "database_setup": {
+    "sql_file": "db/migrations/schema.sql",
+    "database_name": "dcss_db",
+    "tables": [
+      "users",
+      "faculty_availability",
+      "appointments"
+    ]
+  },
+  "deployment_steps": [
+    "1. Log in to Hostinger hPanel and navigate to 'Databases' -> 'MySQL Databases'.",
+    "2. Create a new database and user. Note down the Database Name, User, and Password.",
+    "3. Open phpMyAdmin for your new database and import 'db/migrations/schema.sql'.",
+    "4. In hPanel, go to 'File Manager' -> open 'public_html'.",
+    "5. Upload all files and folders from the local 'web/' directory into 'public_html'.",
+    "6. Open 'public_html/config/database.php' in File Manager and enter your Hostinger DB credentials.",
+    "7. Ensure PHP version is set to 8.1 or 8.2 under 'Advanced' -> 'PHP Configuration' in hPanel.",
+    "8. Open your domain in any browser to verify your live site."
+  ]
+}
