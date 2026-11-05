@@ -101,14 +101,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Log In
             </button>
         </form>
-
-        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-light); font-size:12px; color:var(--text-muted); text-align:center;">
-            <strong>Demo Accounts (password: password123):</strong><br>
-            Faculty: <code>Batecan.Vince@ue.edu.ph</code><br>
-            Student: <code>Reyes.Jane@ue.edu.ph</code><br>
-            Admin: <code>Camacho.Paul@ue.edu.ph</code>
-        </div>
     </div>
 </body>
 </html>
-
