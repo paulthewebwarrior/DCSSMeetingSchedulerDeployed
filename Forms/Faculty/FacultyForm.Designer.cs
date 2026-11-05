@@ -219,7 +219,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabFaculty.Controls.Add(tabAvailability);
             tabFaculty.Controls.Add(tabSettings);
             tabFaculty.Font = new Font("Segoe UI", 9F, FontStyle.Regular, GraphicsUnit.Point, 0);
-            tabFaculty.Location = new Point(0, 89);
+            tabFaculty.Location = new Point(0, 101);
             tabFaculty.Margin = new Padding(2);
             tabFaculty.Name = "tabFaculty";
             tabFaculty.SelectedIndex = 0;
@@ -242,7 +242,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabHome.Margin = new Padding(2);
             tabHome.Name = "tabHome";
             tabHome.Padding = new Padding(2);
-            tabHome.Size = new Size(1258, 564);
+            tabHome.Size = new Size(1258, 643);
             tabHome.TabIndex = 0;
             tabHome.Text = "Home";
             // 
@@ -258,7 +258,7 @@ namespace DCSSMeetingScheduler.Faculty
             dataGridView2.ColumnHeadersHeight = 34;
             dataGridView2.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView2.Columns.AddRange(new DataGridViewColumn[] { request_id, Stud_Name, Date, Start, End, MStatus, FRemarks });
-            dataGridView2.Location = new Point(16, 372);
+            dataGridView2.Location = new Point(16, 422);
             dataGridView2.Margin = new Padding(2);
             dataGridView2.Name = "dataGridView2";
             dataGridView2.ReadOnly = true;
@@ -502,7 +502,7 @@ namespace DCSSMeetingScheduler.Faculty
             // 
             // pictureBox2
             // 
-            pictureBox2.Location = new Point(18, 24);
+            pictureBox2.Location = new Point(18, 27);
             pictureBox2.Margin = new Padding(2);
             pictureBox2.Name = "pictureBox2";
             pictureBox2.Size = new Size(45, 39);
@@ -544,7 +544,7 @@ namespace DCSSMeetingScheduler.Faculty
             // 
             // pictureBox1
             // 
-            pictureBox1.Location = new Point(15, 22);
+            pictureBox1.Location = new Point(15, 25);
             pictureBox1.Margin = new Padding(2);
             pictureBox1.Name = "pictureBox1";
             pictureBox1.Size = new Size(45, 39);
@@ -587,7 +587,7 @@ namespace DCSSMeetingScheduler.Faculty
             // 
             // pictureBox4
             // 
-            pictureBox4.Location = new Point(24, 24);
+            pictureBox4.Location = new Point(24, 27);
             pictureBox4.Margin = new Padding(2);
             pictureBox4.Name = "pictureBox4";
             pictureBox4.Size = new Size(45, 39);
@@ -629,7 +629,7 @@ namespace DCSSMeetingScheduler.Faculty
             // 
             // pictureBox3
             // 
-            pictureBox3.Location = new Point(21, 24);
+            pictureBox3.Location = new Point(21, 27);
             pictureBox3.Margin = new Padding(2);
             pictureBox3.Name = "pictureBox3";
             pictureBox3.Size = new Size(45, 39);
@@ -677,7 +677,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabRequest.Margin = new Padding(2);
             tabRequest.Name = "tabRequest";
             tabRequest.Padding = new Padding(2);
-            tabRequest.Size = new Size(1258, 564);
+            tabRequest.Size = new Size(1258, 643);
             tabRequest.TabIndex = 1;
             tabRequest.Text = "Request";
             tabRequest.Click += tabRequest_Click;
@@ -957,7 +957,7 @@ namespace DCSSMeetingScheduler.Faculty
             panel4.BorderStyle = BorderStyle.FixedSingle;
             panel4.Controls.Add(label2);
             panel4.Controls.Add(label7);
-            panel4.Location = new Point(7, 4);
+            panel4.Location = new Point(7, 5);
             panel4.Margin = new Padding(2);
             panel4.Name = "panel4";
             panel4.Size = new Size(1245, 79);
@@ -996,7 +996,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabAvailability.Margin = new Padding(2);
             tabAvailability.Name = "tabAvailability";
             tabAvailability.Padding = new Padding(2);
-            tabAvailability.Size = new Size(1258, 564);
+            tabAvailability.Size = new Size(1258, 643);
             tabAvailability.TabIndex = 2;
             tabAvailability.Text = "Availabillity";
             tabAvailability.Click += AvailabilityPage_Click;
@@ -1007,7 +1007,7 @@ namespace DCSSMeetingScheduler.Faculty
             panel3.BorderStyle = BorderStyle.FixedSingle;
             panel3.Controls.Add(lblAvailSub);
             panel3.Controls.Add(lblAvailTitle);
-            panel3.Location = new Point(7, 4);
+            panel3.Location = new Point(7, 5);
             panel3.Margin = new Padding(2);
             panel3.Name = "panel3";
             panel3.Size = new Size(1248, 79);
@@ -1293,7 +1293,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabSettings.Margin = new Padding(2);
             tabSettings.Name = "tabSettings";
             tabSettings.Padding = new Padding(2);
-            tabSettings.Size = new Size(1258, 564);
+            tabSettings.Size = new Size(1258, 643);
             tabSettings.TabIndex = 3;
             tabSettings.Text = "Setting";
             // 
@@ -1884,6 +1884,7 @@ namespace DCSSMeetingScheduler.Faculty
             pnlHeader.Name = "pnlHeader";
             pnlHeader.Size = new Size(1262, 107);
             pnlHeader.TabIndex = 11;
+            pnlHeader.Paint += pnlHeader_Paint;
             // 
             // FacultyForm
             // 
