@@ -7,6 +7,12 @@ Auth::redirectIfLoggedIn();
 
 $error = '';
 $success = '';
+$firstName = '';
+$lastName  = '';
+$email     = '';
+$idNumber  = '';
+$program   = 'BSCS';
+$role      = 'Student';
 
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email     = trim($_POST['email'] ?? '');
@@ -18,8 +24,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $program   = trim($_POST['program'] ?? 'BSCS');
     $role      = $_POST['role'] ?? 'Student';
 
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
-        $error = "Please enter a valid UE email address.";
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@ue\.edu\.ph$/i', $email)) {
+        $error = "Please enter a valid UE email address (e.g. name@ue.edu.ph).";
     } elseif (empty($firstName) || empty($lastName)) {
         $error = "First name and last name are required.";
     } elseif (strlen($password) < 6) {
@@ -83,36 +89,36 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                 <div class="form-group">
                     <label class="form-label" for="first_name">First Name</label>
-                    <input type="text" id="first_name" name="first_name" class="form-control" required>
+                    <input type="text" id="first_name" name="first_name" class="form-control" value="<?= htmlspecialchars($firstName) ?>" required>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="last_name">Last Name</label>
-                    <input type="text" id="last_name" name="last_name" class="form-control" required>
+                    <input type="text" id="last_name" name="last_name" class="form-control" value="<?= htmlspecialchars($lastName) ?>" required>
                 </div>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="email">UE Email Address</label>
-                <input type="email" id="email" name="email" class="form-control" placeholder="name@ue.edu.ph" required>
+                <input type="email" id="email" name="email" class="form-control" placeholder="name@ue.edu.ph" pattern="^[a-zA-Z0-9._%+-]+@ue\.edu\.ph$" title="Please enter a valid UE email address ending with @ue.edu.ph" value="<?= htmlspecialchars($email) ?>" required>
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                 <div class="form-group">
                     <label class="form-label" for="role">Role</label>
                     <select id="role" name="role" class="form-control">
-                        <option value="Student">Student</option>
-                        <option value="Faculty">Faculty</option>
+                        <option value="Student" <?= $role === 'Student' ? 'selected' : '' ?>>Student</option>
+                        <option value="Faculty" <?= $role === 'Faculty' ? 'selected' : '' ?>>Faculty</option>
                     </select>
                 </div>
                 <div class="form-group">
                     <label class="form-label" for="id_number">ID Number</label>
-                    <input type="text" id="id_number" name="id_number" class="form-control" placeholder="e.g. 2022-0001">
+                    <input type="text" id="id_number" name="id_number" class="form-control" placeholder="e.g. 2022-0001" value="<?= htmlspecialchars($idNumber) ?>">
                 </div>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="program">Program / Department</label>
-                <input type="text" id="program" name="program" class="form-control" placeholder="e.g. BSCS or DCSS">
+                <input type="text" id="program" name="program" class="form-control" placeholder="e.g. BSCS or DCSS" value="<?= htmlspecialchars($program) ?>">
             </div>
 
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">

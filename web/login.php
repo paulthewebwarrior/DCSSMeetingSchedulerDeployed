@@ -12,7 +12,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $email    = trim($_POST['email'] ?? '');
     $password = $_POST['password'] ?? '';
 
-    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL)) {
+    if (empty($email) || !filter_var($email, FILTER_VALIDATE_EMAIL) || !preg_match('/^[a-zA-Z0-9._%+-]+@ue\.edu\.ph$/i', $email)) {
         $error = "Please enter a valid UE email.";
     } elseif (strlen($password) < 6) {
         $error = "Please enter a password of at least 6 characters.";
@@ -80,6 +80,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <label class="form-label" for="email">UE Email Address</label>
                 <input type="email" id="email" name="email" class="form-control" 
                        placeholder="e.g. name@ue.edu.ph" 
+                       pattern="^[a-zA-Z0-9._%+-]+@ue\.edu\.ph$"
+                       title="Please enter a valid UE email address ending with @ue.edu.ph"
                        value="<?= htmlspecialchars($email) ?>" required autofocus>
             </div>
 
