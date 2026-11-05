@@ -31,6 +31,7 @@ namespace DCSSMeetingScheduler.Faculty
             LoadApplicationInfo();
             InitializePreferences();
             InitializeRequestFilters();
+            InitializeRecentRequestsGrid();
             LoadAvailability();
             LoadRequests();
             LoadHomePage();
@@ -66,6 +67,64 @@ namespace DCSSMeetingScheduler.Faculty
             UpdateHomeNotifications();
         }
 
+        private void InitializeRecentRequestsGrid()
+        {
+            dataGridView2.AutoGenerateColumns = false;
+            dataGridView2.SelectionMode = DataGridViewSelectionMode.FullRowSelect;
+            dataGridView2.MultiSelect = false;
+            dataGridView2.Anchor = AnchorStyles.Top | AnchorStyles.Bottom | AnchorStyles.Left | AnchorStyles.Right;
+            dataGridView2.DefaultCellStyle.WrapMode = DataGridViewTriState.True;
+            request_id.DataPropertyName = "appointment_id";
+            Stud_Name.DataPropertyName = "student_name";
+            Date.DataPropertyName = "meeting_datetime";
+            Date.DefaultCellStyle.Format = "MMM dd, yyyy";
+            Start.DataPropertyName = "meeting_datetime";
+            Start.DefaultCellStyle.Format = "hh:mm tt";
+            End.DataPropertyName = "meeting_end_datetime";
+            End.DefaultCellStyle.Format = "hh:mm tt";
+            End.DefaultCellStyle.NullValue = "N/A";
+            MStatus.DataPropertyName = "status";
+            FRemarks.DataPropertyName = "faculty_remarks";
+            FRemarks.DefaultCellStyle.NullValue = "";
+            dataGridView2.CellDoubleClick += RecentRequest_CellDoubleClick;
+            dataGridView2.Paint += (_, e) =>
+            {
+                if (dataGridView2.Rows.Count == 0)
+                {
+                    Rectangle area = dataGridView2.ClientRectangle;
+                    area.Y += dataGridView2.ColumnHeadersHeight;
+                    area.Height -= dataGridView2.ColumnHeadersHeight;
+                    TextRenderer.DrawText(e.Graphics, recentRequestsMessage, dataGridView2.Font,
+                        area, Color.DimGray, TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                }
+            };
+        }
+
+        private string recentRequestsMessage = "No meeting requests yet.";
+
+        private void RecentRequest_CellDoubleClick(object? sender, DataGridViewCellEventArgs e)
+        {
+            if (e.RowIndex < 0)
+                return;
+
+            int id = Convert.ToInt32(dataGridView2.Rows[e.RowIndex].Cells["request_id"].Value);
+            textBox3.Clear();
+            comboBox2.SelectedItem = "All";
+            tabFaculty.SelectedTab = tabRequest;
+            Requests.ClearSelection();
+            Requests.CurrentCell = null;
+            foreach (DataGridViewRow row in Requests.Rows)
+            {
+                if (Convert.ToInt32(row.Cells["Req_ID"].Value) == id)
+                {
+                    Requests.CurrentCell = row.Cells["Sname"];
+                    row.Selected = true;
+                    Requests.FirstDisplayedScrollingRowIndex = row.Index;
+                    break;
+                }
+            }
+        }
+
         private void LoadRecentMeetings()
         {
             if (loggedInUser == null)
@@ -77,18 +136,18 @@ namespace DCSSMeetingScheduler.Faculty
             {
                 using (MySqlConnection conn = Connection.GetConnection())
                 {
-                    string query = "SELECT a.appointment_id, " +
-                                   "CONCAT(u.first_name, ' ', u.last_name) AS student_name, " +
-                                   "DATE_FORMAT(a.meeting_datetime, '%b %d, %Y') AS meeting_date, " +
-                                   "DATE_FORMAT(a.meeting_datetime, '%h:%i %p') AS start_time, " +
-                                   "IFNULL(DATE_FORMAT(a.meeting_end_datetime, '%h:%i %p'), 'N/A') AS end_time, " +
-                                   "a.status, " +
-                                   "IFNULL(a.faculty_remarks, '') AS faculty_remarks " +
-                                   "FROM appointments a " +
-                                   "INNER JOIN users u ON a.student_id = u.user_id " +
-                                   "WHERE a.faculty_id = @facultyId " +
-                                   "ORDER BY a.meeting_datetime DESC " +
-                                   "LIMIT 10";
+                    string query = """
+                        SELECT appointments.appointment_id,
+                               CONCAT(users.first_name, ' ', users.last_name) AS student_name,
+                               appointments.meeting_datetime,
+                               appointments.meeting_end_datetime,
+                               appointments.status,
+                               appointments.faculty_remarks
+                        FROM appointments
+                        JOIN users ON appointments.student_id = users.user_id
+                        WHERE appointments.faculty_id = @facultyId
+                        ORDER BY appointments.created_at DESC, appointments.appointment_id DESC
+                        """;
 
                     using (MySqlCommand cmd = new MySqlCommand(query, conn))
                     {
@@ -99,21 +158,20 @@ namespace DCSSMeetingScheduler.Faculty
                             DataTable dt = new DataTable();
                             da.Fill(dt);
 
-                            dataGridView2.AutoGenerateColumns = false;
-                            request_id.DataPropertyName = "appointment_id";
-                            Stud_Name.DataPropertyName = "student_name";
-                            Date.DataPropertyName = "meeting_date";
-                            Start.DataPropertyName = "start_time";
-                            End.DataPropertyName = "end_time";
-                            MStatus.DataPropertyName = "status";
-                            FRemarks.DataPropertyName = "faculty_remarks";
+                            recentRequestsMessage = "No meeting requests yet.";
                             dataGridView2.DataSource = dt;
+                            dataGridView2.ClearSelection();
+                            dataGridView2.CurrentCell = null;
+                            dataGridView2.Invalidate();
                         }
                     }
                 }
             }
             catch (Exception ex)
             {
+                recentRequestsMessage = "Unable to load meeting requests. Click Refresh to try again.";
+                dataGridView2.DataSource = null;
+                dataGridView2.Invalidate();
                 MessageBox.Show("Error loading recent meetings: " + ex.Message, "Error", MessageBoxButtons.OK, MessageBoxIcon.Error);
             }
         }
@@ -382,6 +440,7 @@ namespace DCSSMeetingScheduler.Faculty
             }
 
             grpRecentMeet.Visible = chkShowRecentRequestDashboard.Checked;
+            dataGridView2.Visible = chkShowRecentRequestDashboard.Checked;
             grpOverview.Visible = chkShowRequestDashboard.Checked;
 
             MessageBox.Show("Preferences saved successfully!", "Preferences", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -401,6 +460,7 @@ namespace DCSSMeetingScheduler.Faculty
             chkShowRecentRequestDashboard.Checked = true;
 
             grpRecentMeet.Visible = true;
+            dataGridView2.Visible = true;
             grpOverview.Visible = true;
 
             MessageBox.Show("Preferences reset to default values.", "Preferences", MessageBoxButtons.OK, MessageBoxIcon.Information);
@@ -567,22 +627,12 @@ namespace DCSSMeetingScheduler.Faculty
 
         private int GetSelectedRequestId()
         {
-            if (Requests.CurrentRow != null && Requests.CurrentRow.Index >= 0)
+            DataGridView grid = tabFaculty.SelectedTab == tabHome ? dataGridView2 : Requests;
+            string idColumn = grid == dataGridView2 ? "request_id" : "Req_ID";
+            if (grid.CurrentRow != null &&
+                int.TryParse(grid.CurrentRow.Cells[idColumn].Value?.ToString(), out int id))
             {
-                object? val = Requests.CurrentRow.Cells["Req_ID"].Value;
-                if (val != null && int.TryParse(val.ToString(), out int id))
-                {
-                    return id;
-                }
-            }
-
-            if (dataGridView2.CurrentRow != null && dataGridView2.CurrentRow.Index >= 0)
-            {
-                object? val = dataGridView2.CurrentRow.Cells["request_id"].Value;
-                if (val != null && int.TryParse(val.ToString(), out int id))
-                {
-                    return id;
-                }
+                return id;
             }
 
             return -1;
