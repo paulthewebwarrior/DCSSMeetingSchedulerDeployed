@@ -17,18 +17,18 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $action = $_POST['action'] ?? '';
 
     if ($action === 'update_profile') {
-        $fullName = trim($_POST['full_name'] ?? '');
+        $fullName   = trim($_POST['full_name'] ?? '');
         $department = trim($_POST['department'] ?? '');
 
         if (empty($fullName) || empty($department)) {
-            Flash::set('error', 'Please fill in both name and department fields.');
+            Flash::set('error', 'Please enter your name and department.');
         } else {
             $firstName = $fullName;
-            $lastName = '';
-            $spacePos = strpos($fullName, ' ');
+            $lastName  = '';
+            $spacePos  = strpos($fullName, ' ');
             if ($spacePos !== false) {
                 $firstName = substr($fullName, 0, $spacePos);
-                $lastName = trim(substr($fullName, $spacePos + 1));
+                $lastName  = trim(substr($fullName, $spacePos + 1));
             }
 
             $stmt = $db->prepare("UPDATE users SET first_name = :fname, last_name = :lname, program_or_dept = :dept WHERE user_id = :id");
@@ -126,8 +126,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     if ($action === 'update_request_status') {
-        $appId  = (int)($_POST['appointment_id'] ?? -1);
-        $status = $_POST['status'] ?? '';
+        $appId   = (int)($_POST['appointment_id'] ?? -1);
+        $status  = $_POST['status'] ?? '';
         $allowed = ['Approved', 'Declined', 'Completed'];
 
         if ($appId > 0 && in_array($status, $allowed, true)) {
@@ -240,442 +240,471 @@ $availabilityList = $stmtAvail->fetchAll();
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>DCSS - Faculty Portal</title>
+    <title>Faculty Portal - DCSS Meeting Scheduler</title>
     <link rel="stylesheet" href="css/app.css">
 </head>
 <body>
-    <header class="app-header">
-        <div class="header-brand">
-            <img src="assets/dcss.jpg" alt="DCSS" class="brand-logo" onerror="this.style.display='none'">
+    <header class="win-header-panel">
+        <div class="win-brand">
+            <img src="assets/dcss.jpg" alt="DCSS Logo" class="win-brand-logo" onerror="this.src='Resources/dcss.jpg'">
             <div>
-                <h1 class="brand-title">Faculty Portal</h1>
-                <p class="brand-subtitle">Faculty Request Management System</p>
+                <div class="win-title">Faculty Portal</div>
+                <div class="win-subtitle">Faculty Request Management System</div>
             </div>
         </div>
-        <div class="header-user">
-            <div class="user-badge">
-                <span><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></span>
-                <span class="role-tag"><?= htmlspecialchars($user['role']) ?></span>
-            </div>
-            <a href="logout.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
+        <div class="win-user-info">
+            <span class="win-badge"><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?> (Faculty)</span>
+            <a href="logout.php" class="win-btn-logout" onclick="return confirm('Are you sure you want to log out?');">
                 Log Out
             </a>
         </div>
     </header>
 
-    <main class="main-wrapper">
+    <div class="win-container">
         <?= Flash::render() ?>
 
-        <nav class="tab-navigation">
-            <a href="?tab=home" class="tab-btn <?= $currentTab === 'home' ? 'active' : '' ?>">Home</a>
-            <a href="?tab=request" class="tab-btn <?= $currentTab === 'request' ? 'active' : '' ?>">Request</a>
-            <a href="?tab=availability" class="tab-btn <?= $currentTab === 'availability' ? 'active' : '' ?>">Availability</a>
-            <a href="?tab=setting" class="tab-btn <?= $currentTab === 'setting' ? 'active' : '' ?>">Setting</a>
-        </nav>
+        <div class="win-tabcontrol">
+            <div class="win-tab-strip">
+                <a href="?tab=home" class="win-tab-item <?= $currentTab === 'home' ? 'active' : '' ?>">Home</a>
+                <a href="?tab=request" class="win-tab-item <?= $currentTab === 'request' ? 'active' : '' ?>">Request</a>
+                <a href="?tab=availability" class="win-tab-item <?= $currentTab === 'availability' ? 'active' : '' ?>">Availability</a>
+                <a href="?tab=setting" class="win-tab-item <?= $currentTab === 'setting' ? 'active' : '' ?>">Setting</a>
+            </div>
 
-        <div class="tab-content">
-            <?php if ($currentTab === 'home'): ?>
-                <div class="section-banner">
-                    <h2>Faculty Dashboard</h2>
-                    <p>Overview of student consultation requests and upcoming schedules</p>
-                </div>
-
-                <div class="kpi-grid">
-                    <div class="kpi-card kpi-total">
-                        <div class="kpi-title">Total Requests</div>
-                        <div class="kpi-value"><?= (int)$stats['total_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-pending">
-                        <div class="kpi-title">Pending</div>
-                        <div class="kpi-value"><?= (int)$stats['pending_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-approved">
-                        <div class="kpi-title">Approved</div>
-                        <div class="kpi-value"><?= (int)$stats['approved_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-declined">
-                        <div class="kpi-title">Declined</div>
-                        <div class="kpi-value"><?= (int)$stats['declined_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-today">
-                        <div class="kpi-title">Today's Meetings</div>
-                        <div class="kpi-value"><?= (int)$stats['today_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-upcoming">
-                        <div class="kpi-title">Upcoming Meetings</div>
-                        <div class="kpi-value"><?= (int)$stats['upcoming_count'] ?></div>
-                    </div>
-                </div>
-
-                <div class="notification-box">
-                    <div class="notification-message">
-                        <?php if ($stats['pending_count'] > 0): ?>
-                            🔔 You have <?= (int)$stats['pending_count'] ?> pending meeting request(s) awaiting your review.
-                        <?php else: ?>
-                            ✓ You have no pending meeting requests.
-                        <?php endif; ?>
-                    </div>
-                    <a href="?tab=home" class="btn btn-primary" style="padding:6px 14px; font-size:13px;">Refresh</a>
-                </div>
-
-                <div class="panel-card">
-                    <h3 class="panel-card-title">Recent Meetings Request</h3>
-                    <div class="table-responsive">
-                        <table class="data-table">
-                            <thead>
-                                <tr>
-                                    <th>Request ID</th>
-                                    <th>Student Name</th>
-                                    <th>Date</th>
-                                    <th>Start</th>
-                                    <th>End</th>
-                                    <th>Status</th>
-                                    <th>Faculty Remarks</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                <?php if (empty($recentMeetings)): ?>
-                                    <tr>
-                                        <td colspan="7" style="text-align:center; padding:24px; color:var(--text-muted);">
-                                            No recent meeting requests found.
-                                        </td>
-                                    </tr>
-                                <?php else: ?>
-                                    <?php foreach ($recentMeetings as $m): ?>
-                                        <tr>
-                                            <td><strong>#<?= htmlspecialchars($m['appointment_id']) ?></strong></td>
-                                            <td><?= htmlspecialchars($m['student_name']) ?></td>
-                                            <td><?= htmlspecialchars($m['meeting_date']) ?></td>
-                                            <td><?= htmlspecialchars($m['start_time']) ?></td>
-                                            <td><?= htmlspecialchars($m['end_time']) ?></td>
-                                            <td>
-                                                <span class="badge badge-<?= strtolower(htmlspecialchars($m['status'])) ?>">
-                                                    <?= htmlspecialchars($m['status']) ?>
-                                                </span>
-                                            </td>
-                                            <td><?= htmlspecialchars($m['faculty_remarks'] ?: '-') ?></td>
-                                        </tr>
-                                    <?php endforeach; ?>
-                                <?php endif; ?>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-
-            <?php elseif ($currentTab === 'request'): ?>
-                <div class="section-banner">
-                    <h2>Student Requests</h2>
-                    <p>Review, approve, decline, or complete consultation appointments</p>
-                </div>
-
-                <div class="kpi-grid">
-                    <div class="kpi-card kpi-total">
-                        <div class="kpi-title">Total Requests</div>
-                        <div class="kpi-value"><?= (int)$stats['total_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-pending">
-                        <div class="kpi-title">Pending Requests</div>
-                        <div class="kpi-value"><?= (int)$stats['pending_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-approved">
-                        <div class="kpi-title">Approved Requests</div>
-                        <div class="kpi-value"><?= (int)$stats['approved_count'] ?></div>
-                    </div>
-                    <div class="kpi-card kpi-declined">
-                        <div class="kpi-title">Declined Requests</div>
-                        <div class="kpi-value"><?= (int)$stats['declined_count'] ?></div>
-                    </div>
-                </div>
-
-                <form method="GET" action="faculty.php" class="toolbar-row">
-                    <input type="hidden" name="tab" value="request">
-                    <div class="filter-group">
-                        <input type="text" name="search" class="input-search" 
-                               placeholder="Search student, program, or purpose..." 
-                               value="<?= htmlspecialchars($searchKeyword) ?>" style="min-width:280px;">
-                        
-                        <label style="font-weight:600; font-size:13px; color:var(--text-secondary);">Status:</label>
-                        <select name="status_filter" class="select-filter" onchange="this.form.submit()">
-                            <option value="All" <?= $statusFilter === 'All' ? 'selected' : '' ?>>All Statuses</option>
-                            <option value="Pending" <?= $statusFilter === 'Pending' ? 'selected' : '' ?>>Pending</option>
-                            <option value="Approved" <?= $statusFilter === 'Approved' ? 'selected' : '' ?>>Approved</option>
-                            <option value="Declined" <?= $statusFilter === 'Declined' ? 'selected' : '' ?>>Declined</option>
-                            <option value="Completed" <?= $statusFilter === 'Completed' ? 'selected' : '' ?>>Completed</option>
-                        </select>
-                        <button type="submit" class="btn btn-outline">Filter</button>
-                        <?php if (!empty($searchKeyword) || $statusFilter !== 'All'): ?>
-                            <a href="?tab=request" class="btn btn-secondary">Reset</a>
-                        <?php endif; ?>
-                    </div>
-                </form>
-
-                <div class="table-responsive">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Request ID</th>
-                                <th>Student Name</th>
-                                <th>Subject / Dept</th>
-                                <th>Purpose</th>
-                                <th>Request Date & Time</th>
-                                <th>Status</th>
-                                <th>Remarks</th>
-                                <th style="text-align:right;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            <?php if (empty($requestsList)): ?>
-                                <tr>
-                                    <td colspan="8" style="text-align:center; padding:30px; color:var(--text-muted);">
-                                        No student consultation requests match your criteria.
-                                    </td>
-                                </tr>
-                            <?php else: ?>
-                                <?php foreach ($requestsList as $r): ?>
-                                    <tr>
-                                        <td><strong>#<?= htmlspecialchars($r['appointment_id']) ?></strong></td>
-                                        <td><strong><?= htmlspecialchars($r['student_name']) ?></strong></td>
-                                        <td><?= htmlspecialchars($r['program_or_dept']) ?></td>
-                                        <td><?= htmlspecialchars($r['purpose']) ?></td>
-                                        <td><?= htmlspecialchars($r['request_datetime']) ?></td>
-                                        <td>
-                                            <span class="badge badge-<?= strtolower(htmlspecialchars($r['status'])) ?>">
-                                                <?= htmlspecialchars($r['status']) ?>
-                                            </span>
-                                        </td>
-                                        <td><?= htmlspecialchars($r['faculty_remarks'] ?: '-') ?></td>
-                                        <td style="text-align:right;">
-                                            <?php if ($r['status'] === 'Pending'): ?>
-                                                <form method="POST" style="display:inline-block;" onsubmit="return confirm('Approve this consultation request?');">
-                                                    <input type="hidden" name="action" value="update_request_status">
-                                                    <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
-                                                    <input type="hidden" name="status" value="Approved">
-                                                    <button type="submit" class="btn btn-success" style="padding:4px 10px; font-size:12px;">Approve</button>
-                                                </form>
-                                                <form method="POST" style="display:inline-block;" onsubmit="return confirm('Decline this consultation request?');">
-                                                    <input type="hidden" name="action" value="update_request_status">
-                                                    <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
-                                                    <input type="hidden" name="status" value="Declined">
-                                                    <button type="submit" class="btn btn-danger" style="padding:4px 10px; font-size:12px;">Decline</button>
-                                                </form>
-                                            <?php elseif ($r['status'] === 'Approved'): ?>
-                                                <form method="POST" style="display:inline-block;" onsubmit="return confirm('Mark this meeting as completed?');">
-                                                    <input type="hidden" name="action" value="update_request_status">
-                                                    <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
-                                                    <input type="hidden" name="status" value="Completed">
-                                                    <button type="submit" class="btn btn-primary" style="padding:4px 10px; font-size:12px;">Complete</button>
-                                                </form>
-                                            <?php else: ?>
-                                                <span style="font-size:12px; color:var(--text-muted);">-</span>
-                                            <?php endif; ?>
-                                        </td>
-                                    </tr>
-                                <?php endforeach; ?>
-                            <?php endif; ?>
-                        </tbody>
-                    </table>
-                </div>
-
-            <?php elseif ($currentTab === 'availability'): ?>
-                <div class="section-banner">
-                    <h2>Manage Consultation Hours</h2>
-                    <p>Add, edit, and organize your weekly consultation schedule so students can book slots</p>
-                </div>
-
-                <div class="two-column-layout">
-                    <div class="panel-card">
-                        <h3 class="panel-card-title" id="avail-form-title">Add Consultation Hours</h3>
-                        <form method="POST" action="faculty.php?tab=availability" id="avail-form">
-                            <input type="hidden" name="action" value="save_availability">
-                            <input type="hidden" name="availability_id" id="avail_id" value="-1">
-
-                            <div class="form-group">
-                                <label class="form-label" for="day">Day of Week</label>
-                                <select name="day" id="day" class="form-control" required>
-                                    <option value="">-- Select Day --</option>
-                                    <option value="Monday">Monday</option>
-                                    <option value="Tuesday">Tuesday</option>
-                                    <option value="Wednesday">Wednesday</option>
-                                    <option value="Thursday">Thursday</option>
-                                    <option value="Friday">Friday</option>
-                                    <option value="Saturday">Saturday</option>
-                                </select>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="start_time">Start Time</label>
-                                <input type="time" name="start_time" id="start_time" class="form-control" value="08:00" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="end_time">End Time</label>
-                                <input type="time" name="end_time" id="end_time" class="form-control" value="09:00" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="location">Location (Optional)</label>
-                                <input type="text" name="location" id="location" class="form-control" placeholder="e.g. Room 101, Online via MS Teams">
-                            </div>
-
-                            <div class="form-actions">
-                                <button type="submit" class="btn btn-success" id="btn-save-avail" style="flex:1;">
-                                    + Add
-                                </button>
-                                <button type="button" class="btn btn-secondary" onclick="resetAvailForm();">
-                                    Clear
-                                </button>
-                            </div>
-                        </form>
+            <div class="win-tab-page">
+                <?php if ($currentTab === 'home'): ?>
+                    <!-- Section Header (panel5) -->
+                    <div class="win-section-header">
+                        <h2>Faculty Dashboard</h2>
+                        <p>Overview of student consultation request</p>
                     </div>
 
-                    <div class="panel-card">
-                        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px; margin-bottom:14px;">
-                            <h3 class="panel-card-title" style="margin-bottom:0; border:none; padding:0;">Weekly Consultation Hours</h3>
-                            <form method="GET" action="faculty.php" style="display:flex; gap:8px;">
-                                <input type="hidden" name="tab" value="availability">
-                                <input type="text" name="avail_search" class="input-search" placeholder="Search day or location..." value="<?= htmlspecialchars($availSearch) ?>">
-                                <button type="submit" class="btn btn-primary" style="padding:6px 12px; font-size:13px;">Search</button>
-                                <?php if (!empty($availSearch)): ?>
-                                    <a href="?tab=availability" class="btn btn-secondary" style="padding:6px 12px; font-size:13px;">Reset</a>
-                                <?php endif; ?>
-                            </form>
+                    <!-- 4 Summary Metric Panels (pnlTotal, pnlPending, pnlApproved, pnlDeclined) -->
+                    <div class="win-metric-cards">
+                        <div class="win-card-panel card-total">
+                            <div class="win-card-label">Total Requests</div>
+                            <div class="win-card-value"><?= (int)$stats['total_count'] ?></div>
                         </div>
+                        <div class="win-card-panel card-pending">
+                            <div class="win-card-label">Pending</div>
+                            <div class="win-card-value"><?= (int)$stats['pending_count'] ?></div>
+                        </div>
+                        <div class="win-card-panel card-approved">
+                            <div class="win-card-label">Approved</div>
+                            <div class="win-card-value"><?= (int)$stats['approved_count'] ?></div>
+                        </div>
+                        <div class="win-card-panel card-declined">
+                            <div class="win-card-label">Declined</div>
+                            <div class="win-card-value"><?= (int)$stats['declined_count'] ?></div>
+                        </div>
+                    </div>
 
-                        <div class="table-responsive">
-                            <table class="data-table">
+                    <!-- Today's Overview GroupBox (grpOverview) -->
+                    <div class="win-groupbox">
+                        <div class="win-groupbox-title">Today's Overview</div>
+                        <div class="win-overview-subpanels">
+                            <div class="win-subpanel">
+                                <span class="win-subpanel-title">Today's Meetings:</span>
+                                <span class="win-subpanel-value"><?= (int)$stats['today_count'] ?></span>
+                            </div>
+                            <div class="win-subpanel">
+                                <span class="win-subpanel-title">Upcoming Meetings:</span>
+                                <span class="win-subpanel-value"><?= (int)$stats['upcoming_count'] ?></span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Notification Banner (pnlNotifs) -->
+                    <div class="win-notif-bar">
+                        <span>
+                            <?php if ($stats['pending_count'] > 0): ?>
+                                You have <?= (int)$stats['pending_count'] ?> new meeting request updates.
+                            <?php else: ?>
+                                You have no pending meeting requests.
+                            <?php endif; ?>
+                        </span>
+                        <a href="?tab=home" class="win-btn win-btn-blue">Refresh</a>
+                    </div>
+
+                    <!-- Recent Meetings GroupBox (grpRecentMeet + dataGridView2) -->
+                    <div class="win-groupbox">
+                        <div class="win-groupbox-title">Recent Meetings Request</div>
+                        <div class="win-datagrid-wrap">
+                            <table class="win-datagrid">
                                 <thead>
                                     <tr>
-                                        <th>Day</th>
+                                        <th>Request ID</th>
+                                        <th>Student Name</th>
+                                        <th>Meeting Date</th>
                                         <th>Start Time</th>
                                         <th>End Time</th>
-                                        <th>Location</th>
-                                        <th style="text-align:right;">Actions</th>
+                                        <th>Status</th>
+                                        <th>Faculty Remarks</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    <?php if (empty($availabilityList)): ?>
+                                    <?php if (empty($recentMeetings)): ?>
                                         <tr>
-                                            <td colspan="5" style="text-align:center; padding:30px; color:var(--text-muted);">
-                                                No consultation hours found. Use the form on the left to add slots.
+                                            <td colspan="7" style="text-align:center; padding:24px; color:#94a3b8;">
+                                                No recent meeting requests.
                                             </td>
                                         </tr>
                                     <?php else: ?>
-                                        <?php foreach ($availabilityList as $av): ?>
+                                        <?php foreach ($recentMeetings as $m): ?>
                                             <tr>
-                                                <td><strong><?= htmlspecialchars($av['days']) ?></strong></td>
-                                                <td><?= htmlspecialchars($av['start_fmt']) ?></td>
-                                                <td><?= htmlspecialchars($av['end_fmt']) ?></td>
-                                                <td><?= htmlspecialchars($av['location'] ?: 'Not Specified') ?></td>
-                                                <td style="text-align:right;">
-                                                    <button type="button" class="btn btn-primary" style="padding:4px 10px; font-size:12px;"
-                                                            onclick='populateAvailForm(<?= json_encode($av) ?>)'>
-                                                        Edit
-                                                    </button>
-                                                    <form method="POST" style="display:inline-block;" onsubmit="return confirm('Delete this consultation schedule?');">
-                                                        <input type="hidden" name="action" value="delete_availability">
-                                                        <input type="hidden" name="availability_id" value="<?= (int)$av['availability_id'] ?>">
-                                                        <button type="submit" class="btn btn-danger" style="padding:4px 10px; font-size:12px;">Delete</button>
-                                                    </form>
+                                                <td>#<?= htmlspecialchars($m['appointment_id']) ?></td>
+                                                <td><strong><?= htmlspecialchars($m['student_name']) ?></strong></td>
+                                                <td><?= htmlspecialchars($m['meeting_date']) ?></td>
+                                                <td><?= htmlspecialchars($m['start_time']) ?></td>
+                                                <td><?= htmlspecialchars($m['end_time']) ?></td>
+                                                <td>
+                                                    <span class="win-status-badge status-<?= strtolower(htmlspecialchars($m['status'])) ?>">
+                                                        <?= htmlspecialchars($m['status']) ?>
+                                                    </span>
                                                 </td>
+                                                <td><?= htmlspecialchars($m['faculty_remarks'] ?: '-') ?></td>
                                             </tr>
                                         <?php endforeach; ?>
                                     <?php endif; ?>
                                 </tbody>
                             </table>
                         </div>
-                        <p style="font-size:12px; color:var(--text-muted); margin-top:10px;">
-                            💡 Tip: Click "Edit" on any row to load its details into the form.
-                        </p>
-                    </div>
-                </div>
-
-            <?php elseif ($currentTab === 'setting'): ?>
-                <div class="section-banner">
-                    <h2>Settings</h2>
-                    <p>Manage your account information and application preferences</p>
-                </div>
-
-                <div class="settings-grid">
-                    <div class="panel-card">
-                        <h3 class="panel-card-title">Faculty Profile</h3>
-                        <form method="POST" action="faculty.php?tab=setting">
-                            <input type="hidden" name="action" value="update_profile">
-
-                            <div class="form-group">
-                                <label class="form-label" for="full_name">Full Name</label>
-                                <input type="text" id="full_name" name="full_name" class="form-control" 
-                                       value="<?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="email">Email</label>
-                                <input type="email" id="email" class="form-control" value="<?= htmlspecialchars($user['ue_email']) ?>" readonly style="background:#f3f4f6;">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="department">Department</label>
-                                <input type="text" id="department" name="department" class="form-control" 
-                                       value="<?= htmlspecialchars($user['program_or_dept'] ?? '') ?>" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="position">Position / Role</label>
-                                <input type="text" id="position" class="form-control" value="<?= htmlspecialchars($user['role']) ?>" readonly style="background:#f3f4f6;">
-                            </div>
-
-                            <button type="submit" class="btn btn-success" style="width:100%; margin-top:10px;">
-                                Save Profile
-                            </button>
-                        </form>
                     </div>
 
-                    <div class="panel-card">
-                        <h3 class="panel-card-title">Change Password</h3>
-                        <form method="POST" action="faculty.php?tab=setting">
-                            <input type="hidden" name="action" value="change_password">
-
-                            <div class="form-group">
-                                <label class="form-label" for="current_password">Current Password</label>
-                                <input type="password" id="current_password" name="current_password" class="form-control" required>
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="new_password">New Password</label>
-                                <input type="password" id="new_password" name="new_password" class="form-control" required minlength="6">
-                            </div>
-
-                            <div class="form-group">
-                                <label class="form-label" for="confirm_password">Confirm New Password</label>
-                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="6">
-                            </div>
-
-                            <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;">
-                                Change Password
-                            </button>
-                        </form>
+                <?php elseif ($currentTab === 'request'): ?>
+                    <!-- Request Dashboard Header (panel4) -->
+                    <div class="win-section-header">
+                        <h2>Request Dashboard</h2>
+                        <p>Manage your requests</p>
                     </div>
 
-                    <div class="panel-card" style="grid-column: 1 / -1;">
-                        <h3 class="panel-card-title">Application Info</h3>
-                        <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:16px; font-size:14px;">
-                            <div>
-                                <span style="color:var(--text-secondary);">Application Version:</span><br>
-                                <strong>1.0.0 (Web Edition)</strong>
+                    <!-- 4 Counter Panels (panel6, panel7, panel8, panel9) -->
+                    <div class="win-metric-cards">
+                        <div class="win-card-panel card-total">
+                            <div class="win-card-label">Total Requests</div>
+                            <div class="win-card-value"><?= (int)$stats['total_count'] ?></div>
+                        </div>
+                        <div class="win-card-panel card-pending">
+                            <div class="win-card-label">Pending Requests</div>
+                            <div class="win-card-value"><?= (int)$stats['pending_count'] ?></div>
+                        </div>
+                        <div class="win-card-panel card-approved">
+                            <div class="win-card-label">Approved Requests</div>
+                            <div class="win-card-value"><?= (int)$stats['approved_count'] ?></div>
+                        </div>
+                        <div class="win-card-panel card-declined">
+                            <div class="win-card-label">Declined Requests</div>
+                            <div class="win-card-value"><?= (int)$stats['declined_count'] ?></div>
+                        </div>
+                    </div>
+
+                    <!-- Section Sub-Header (label16: Student Requests) -->
+                    <div style="font-size:16px; font-weight:700; color:#004000; margin:16px 0 10px 0;">
+                        Student Requests
+                    </div>
+
+                    <!-- Toolbar (label17, textBox3, label18, comboBox2, button2, button3, button4) -->
+                    <form method="GET" action="faculty.php" class="win-toolbar">
+                        <input type="hidden" name="tab" value="request">
+                        <div class="win-filter-set">
+                            <label style="font-weight:600; font-size:12.5px;">Search (Students / Subject / Purpose):</label>
+                            <input type="text" name="search" class="win-textbox" placeholder="Search..." value="<?= htmlspecialchars($searchKeyword) ?>" style="width:260px;">
+                            
+                            <label style="font-weight:600; font-size:12.5px; margin-left:6px;">Filter Status:</label>
+                            <select name="status_filter" class="win-combobox" onchange="this.form.submit()">
+                                <option value="All" <?= $statusFilter === 'All' ? 'selected' : '' ?>>All</option>
+                                <option value="Pending" <?= $statusFilter === 'Pending' ? 'selected' : '' ?>>Pending</option>
+                                <option value="Approved" <?= $statusFilter === 'Approved' ? 'selected' : '' ?>>Approved</option>
+                                <option value="Declined" <?= $statusFilter === 'Declined' ? 'selected' : '' ?>>Declined</option>
+                                <option value="Completed" <?= $statusFilter === 'Completed' ? 'selected' : '' ?>>Completed</option>
+                            </select>
+                            <button type="submit" class="win-btn win-btn-blue">Filter</button>
+                            <?php if (!empty($searchKeyword) || $statusFilter !== 'All'): ?>
+                                <a href="?tab=request" class="win-btn win-btn-gray">Reset</a>
+                            <?php endif; ?>
+                        </div>
+                    </form>
+
+                    <!-- Requests Grid (Requests DataGridView) -->
+                    <div class="win-datagrid-wrap">
+                        <table class="win-datagrid">
+                            <thead>
+                                <tr>
+                                    <th>Request ID</th>
+                                    <th>Student Name</th>
+                                    <th>Subject</th>
+                                    <th>Purpose</th>
+                                    <th>Request Date & Time</th>
+                                    <th>Status</th>
+                                    <th>Faculty Remarks</th>
+                                    <th style="text-align:right;">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <?php if (empty($requestsList)): ?>
+                                    <tr>
+                                        <td colspan="8" style="text-align:center; padding:30px; color:#94a3b8;">
+                                            No student requests match your criteria.
+                                        </td>
+                                    </tr>
+                                <?php else: ?>
+                                    <?php foreach ($requestsList as $r): ?>
+                                        <tr>
+                                            <td>#<?= htmlspecialchars($r['appointment_id']) ?></td>
+                                            <td><strong><?= htmlspecialchars($r['student_name']) ?></strong></td>
+                                            <td><?= htmlspecialchars($r['program_or_dept']) ?></td>
+                                            <td><?= htmlspecialchars($r['purpose']) ?></td>
+                                            <td><?= htmlspecialchars($r['request_datetime']) ?></td>
+                                            <td>
+                                                <span class="win-status-badge status-<?= strtolower(htmlspecialchars($r['status'])) ?>">
+                                                    <?= htmlspecialchars($r['status']) ?>
+                                                </span>
+                                            </td>
+                                            <td><?= htmlspecialchars($r['faculty_remarks'] ?: '-') ?></td>
+                                            <td style="text-align:right;">
+                                                <?php if ($r['status'] === 'Pending'): ?>
+                                                    <form method="POST" style="display:inline-block;" onsubmit="return confirm('Approve this request?');">
+                                                        <input type="hidden" name="action" value="update_request_status">
+                                                        <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
+                                                        <input type="hidden" name="status" value="Approved">
+                                                        <button type="submit" class="win-btn win-btn-green" style="height:26px; padding:0 8px; font-size:11.5px;">Approve</button>
+                                                    </form>
+                                                    <form method="POST" style="display:inline-block;" onsubmit="return confirm('Decline this request?');">
+                                                        <input type="hidden" name="action" value="update_request_status">
+                                                        <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
+                                                        <input type="hidden" name="status" value="Declined">
+                                                        <button type="submit" class="win-btn win-btn-red" style="height:26px; padding:0 8px; font-size:11.5px;">Decline</button>
+                                                    </form>
+                                                <?php elseif ($r['status'] === 'Approved'): ?>
+                                                    <form method="POST" style="display:inline-block;" onsubmit="return confirm('Mark this meeting as completed?');">
+                                                        <input type="hidden" name="action" value="update_request_status">
+                                                        <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
+                                                        <input type="hidden" name="status" value="Completed">
+                                                        <button type="submit" class="win-btn win-btn-forest" style="height:26px; padding:0 8px; font-size:11.5px;">Complete</button>
+                                                    </form>
+                                                <?php else: ?>
+                                                    <span style="color:#94a3b8; font-size:12px;">-</span>
+                                                <?php endif; ?>
+                                            </td>
+                                        </tr>
+                                    <?php endforeach; ?>
+                                <?php endif; ?>
+                            </tbody>
+                        </table>
+                    </div>
+
+                <?php elseif ($currentTab === 'availability'): ?>
+                    <!-- Section Header (panel3) -->
+                    <div class="win-section-header">
+                        <h2>Weekly Consultation Hours</h2>
+                        <p>Set and manage your consultation schedule</p>
+                    </div>
+
+                    <div class="win-two-col">
+                        <!-- Left GroupBox (groupBox1: Add / Consultation Hours) -->
+                        <div class="win-groupbox">
+                            <div class="win-groupbox-title" id="avail-heading">Add / Consultation Hours</div>
+                            <form method="POST" action="faculty.php?tab=availability" id="avail-form">
+                                <input type="hidden" name="action" value="save_availability">
+                                <input type="hidden" name="availability_id" id="avail_id" value="-1">
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="day">Day of Week</label>
+                                    <select name="day" id="day" class="win-combobox" style="width:100%;" required>
+                                        <option value="">Select a day</option>
+                                        <option value="Monday">Monday</option>
+                                        <option value="Tuesday">Tuesday</option>
+                                        <option value="Wednesday">Wednesday</option>
+                                        <option value="Thursday">Thursday</option>
+                                        <option value="Friday">Friday</option>
+                                        <option value="Saturday">Saturday</option>
+                                    </select>
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="start_time">Start Time</label>
+                                    <input type="time" name="start_time" id="start_time" class="win-textbox" style="width:100%;" value="08:00" required>
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="end_time">End Time</label>
+                                    <input type="time" name="end_time" id="end_time" class="win-textbox" style="width:100%;" value="09:00" required>
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="location">Location (Optional)</label>
+                                    <input type="text" name="location" id="location" class="win-textbox" style="width:100%;" placeholder="e.g Room 101, Online etc.">
+                                </div>
+
+                                <div class="win-form-actions">
+                                    <button type="submit" class="win-btn win-btn-green" id="btn-save-avail" style="flex:1; height:36px;">
+                                        + Add
+                                    </button>
+                                    <button type="button" class="win-btn win-btn-gray" onclick="resetAvailForm();" style="flex:1; height:36px;">
+                                        Clear
+                                    </button>
+                                </div>
+                            </form>
+                        </div>
+
+                        <!-- Right GroupBox (groupBox2: Weekly Consultation Hours) -->
+                        <div class="win-groupbox">
+                            <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:12px;">
+                                <div class="win-groupbox-title" style="margin-bottom:0; padding-bottom:0; border:none;">
+                                    Weekly Consultation Hours
+                                </div>
+                                <form method="GET" action="faculty.php" style="display:flex; gap:6px;">
+                                    <input type="hidden" name="tab" value="availability">
+                                    <input type="text" name="avail_search" class="win-textbox" placeholder="Search day or location..." value="<?= htmlspecialchars($availSearch) ?>" style="width:200px;">
+                                    <button type="submit" class="win-btn win-btn-blue">Search</button>
+                                    <?php if (!empty($availSearch)): ?>
+                                        <a href="?tab=availability" class="win-btn win-btn-gray">Reset</a>
+                                    <?php endif; ?>
+                                </form>
                             </div>
-                            <div>
-                                <span style="color:var(--text-secondary);">Database Status:</span><br>
-                                <strong style="color:var(--dcss-green);">Connected (dcss_db)</strong>
+
+                            <div class="win-datagrid-wrap">
+                                <table class="win-datagrid">
+                                    <thead>
+                                        <tr>
+                                            <th>Day</th>
+                                            <th>Start Time</th>
+                                            <th>End Time</th>
+                                            <th>Location</th>
+                                            <th style="text-align:right;">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <?php if (empty($availabilityList)): ?>
+                                            <tr>
+                                                <td colspan="5" style="text-align:center; padding:24px; color:#94a3b8;">
+                                                    No consultation hours scheduled.
+                                                </td>
+                                            </tr>
+                                        <?php else: ?>
+                                            <?php foreach ($availabilityList as $av): ?>
+                                                <tr>
+                                                    <td><strong><?= htmlspecialchars($av['days']) ?></strong></td>
+                                                    <td><?= htmlspecialchars($av['start_fmt']) ?></td>
+                                                    <td><?= htmlspecialchars($av['end_fmt']) ?></td>
+                                                    <td><?= htmlspecialchars($av['location'] ?: 'Faculty Room') ?></td>
+                                                    <td style="text-align:right;">
+                                                        <button type="button" class="win-btn win-btn-green" style="height:26px; padding:0 10px; font-size:11.5px;"
+                                                                onclick='populateAvailForm(<?= json_encode($av) ?>)'>
+                                                            Edit
+                                                        </button>
+                                                        <form method="POST" style="display:inline-block;" onsubmit="return confirm('Are you sure you want to delete this schedule?');">
+                                                            <input type="hidden" name="action" value="delete_availability">
+                                                            <input type="hidden" name="availability_id" value="<?= (int)$av['availability_id'] ?>">
+                                                            <button type="submit" class="win-btn win-btn-red" style="height:26px; padding:0 10px; font-size:11.5px;">Delete</button>
+                                                        </form>
+                                                    </td>
+                                                </tr>
+                                            <?php endforeach; ?>
+                                        <?php endif; ?>
+                                    </tbody>
+                                </table>
                             </div>
-                            <div>
-                                <span style="color:var(--text-secondary);">Current Session:</span><br>
-                                <strong><?= date('M d, Y h:i A') ?></strong>
+
+                            <div style="font-size:12px; color:#64748b; margin-top:10px;">
+                                Tips: Click "Edit" to modify an existing schedule, or "+ Add" to create a new one.
                             </div>
                         </div>
                     </div>
-                </div>
-            <?php endif; ?>
+
+                <?php elseif ($currentTab === 'setting'): ?>
+                    <!-- Settings Header (pnlHeaderSetting) -->
+                    <div class="win-section-header">
+                        <h2>Settings</h2>
+                        <p>Manage your account information and application preferences</p>
+                    </div>
+
+                    <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(360px, 1fr)); gap:16px;">
+                        <!-- Faculty Profile Panel (pnlFacultyProfile) -->
+                        <div class="win-groupbox">
+                            <div class="win-groupbox-title">Faculty Profile</div>
+                            <form method="POST" action="faculty.php?tab=setting">
+                                <input type="hidden" name="action" value="update_profile">
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="full_name">Name</label>
+                                    <input type="text" id="full_name" name="full_name" class="win-textbox" style="width:100%;" 
+                                           value="<?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>" required>
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="email">Email</label>
+                                    <input type="email" id="email" class="win-textbox" style="width:100%; background:#f1f5f9;" value="<?= htmlspecialchars($user['ue_email']) ?>" readonly>
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="department">Department</label>
+                                    <input type="text" id="department" name="department" class="win-textbox" style="width:100%;" 
+                                           value="<?= htmlspecialchars($user['program_or_dept'] ?? '') ?>" required>
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="position">Position</label>
+                                    <input type="text" id="position" class="win-textbox" style="width:100%; background:#f1f5f9;" value="<?= htmlspecialchars($user['role']) ?>" readonly>
+                                </div>
+
+                                <button type="submit" class="win-btn win-btn-green" style="width:100%; height:36px; margin-top:8px;">
+                                    Save Profile
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- Account Settings Panel (pnlAccountSettings) -->
+                        <div class="win-groupbox">
+                            <div class="win-groupbox-title">Account Settings</div>
+                            <p style="font-size:12px; color:#64748b; margin-bottom:12px;">Update your password and security settings</p>
+                            <form method="POST" action="faculty.php?tab=setting">
+                                <input type="hidden" name="action" value="change_password">
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="current_password">Current Password</label>
+                                    <input type="password" id="current_password" name="current_password" class="win-textbox" style="width:100%;" required>
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="new_password">New Password</label>
+                                    <input type="password" id="new_password" name="new_password" class="win-textbox" style="width:100%;" required minlength="6">
+                                </div>
+
+                                <div class="win-field-group">
+                                    <label class="win-field-label" for="confirm_password">Confirm Password</label>
+                                    <input type="password" id="confirm_password" name="confirm_password" class="win-textbox" style="width:100%;" required minlength="6">
+                                </div>
+
+                                <button type="submit" class="win-btn win-btn-blue" style="width:100%; height:36px; margin-top:8px;">
+                                    Change Password
+                                </button>
+                            </form>
+                        </div>
+
+                        <!-- App Info Panel (pnlAppInfo) -->
+                        <div class="win-groupbox" style="grid-column: 1 / -1;">
+                            <div class="win-groupbox-title">Application Info</div>
+                            <div style="display:grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap:14px; font-size:13px;">
+                                <div>
+                                    <span style="color:#64748b;">Application Version:</span><br>
+                                    <strong>1.0.0</strong>
+                                </div>
+                                <div>
+                                    <span style="color:#64748b;">Database:</span><br>
+                                    <strong style="color:#004000;">Connected (dcss_db)</strong>
+                                </div>
+                                <div>
+                                    <span style="color:#64748b;">Last Login:</span><br>
+                                    <strong><?= date('M d, Y h:i A') ?></strong>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                <?php endif; ?>
+            </div>
         </div>
-    </main>
+    </div>
 
     <script>
     function populateAvailForm(item) {
@@ -684,18 +713,17 @@ $availabilityList = $stmtAvail->fetchAll();
         document.getElementById('start_time').value = item.start_time ? item.start_time.substring(0, 5) : '08:00';
         document.getElementById('end_time').value = item.end_time ? item.end_time.substring(0, 5) : '09:00';
         document.getElementById('location').value = item.location || '';
-        document.getElementById('avail-form-title').innerText = 'Edit Consultation Hours';
-        document.getElementById('btn-save-avail').innerText = 'Save Changes';
+        document.getElementById('avail-heading').innerText = 'Edit Consultation Hours';
+        document.getElementById('btn-save-avail').innerText = 'Save';
         document.getElementById('day').scrollIntoView({ behavior: 'smooth' });
     }
 
     function resetAvailForm() {
         document.getElementById('avail_id').value = -1;
         document.getElementById('avail-form').reset();
-        document.getElementById('avail-form-title').innerText = 'Add Consultation Hours';
+        document.getElementById('avail-heading').innerText = 'Add / Consultation Hours';
         document.getElementById('btn-save-avail').innerText = '+ Add';
     }
     </script>
 </body>
 </html>
-

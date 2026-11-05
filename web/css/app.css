@@ -1,24 +1,19 @@
+/* DCSS Meeting Scheduler - Authentic Windows Forms Aesthetic & Web Layout */
+
 :root {
-    --ue-red: #c41e3a;
-    --ue-dark-red: #9e142c;
-    --ue-cream: #faf7f2;
-    --dcss-green: #2e7d32;
-    --dcss-forest: #1e5622;
-    --dcss-sea-green: #2e8b57;
-    --dcss-light-green: #e8f5e9;
-    --bg-page: #f4f6f8;
-    --card-bg: #ffffff;
-    --text-primary: #1f2937;
-    --text-secondary: #6b7280;
-    --text-muted: #9ca3af;
-    --border-color: #e5e7eb;
-    --border-light: #f3f4f6;
-    --shadow-sm: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
-    --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
-    --shadow-lg: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-    --radius-sm: 4px;
-    --radius-md: 8px;
-    --radius-lg: 12px;
+    --win-bg: #f4f6f8;
+    --win-form-bg: #ffffff;
+    --win-header-start: #004000;
+    --win-header-end: #1b4332;
+    --win-dark-green: #004000;
+    --win-sea-green: #2e8b57;
+    --win-forest-green: #228b22;
+    --win-indian-red: #cd5c5c;
+    --win-cornflower-blue: #6495ed;
+    --win-border: #cbd5e1;
+    --win-text-dark: #1e293b;
+    --win-text-muted: #64748b;
+    --win-tab-inactive: #f1f5f9;
 }
 
 * {
@@ -28,475 +23,430 @@
 }
 
 body {
-    font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, Roboto, Helvetica, Arial, sans-serif;
-    background-color: var(--bg-page);
-    color: var(--text-primary);
-    line-height: 1.5;
-    -webkit-font-smoothing: antialiased;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    font-size: 14px;
+    background-color: var(--win-bg);
+    color: var(--win-text-dark);
+    line-height: 1.4;
 }
 
-.app-header {
-    background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 100%);
+/* Form Top Title Bar Panel (WinForms pnlHeader) */
+.win-header-panel {
+    background: linear-gradient(to right, #004000, #14532d);
     color: #ffffff;
-    padding: 16px 24px;
+    padding: 12px 24px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    box-shadow: var(--shadow-md);
-    position: sticky;
-    top: 0;
-    z-index: 100;
+    border-bottom: 2px solid #002800;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
 }
 
-.app-header .header-brand {
+.win-header-panel .win-brand {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 14px;
 }
 
-.app-header .brand-logo {
+.win-header-panel .win-brand-logo {
     height: 48px;
-    width: auto;
-    border-radius: var(--radius-sm);
+    width: 48px;
+    border-radius: 4px;
     background: #ffffff;
     padding: 2px;
+    object-fit: contain;
 }
 
-.app-header .brand-title {
-    font-size: 22px;
+.win-header-panel .win-title {
+    font-size: 20px;
     font-weight: 700;
-    letter-spacing: -0.02em;
     color: #ffffff;
     line-height: 1.2;
 }
 
-.app-header .brand-subtitle {
-    font-size: 13px;
-    color: #d8f3dc;
-    font-weight: 400;
+.win-header-panel .win-subtitle {
+    font-size: 12px;
+    color: #cbd5e1;
 }
 
-.app-header .header-user {
+.win-header-panel .win-user-info {
     display: flex;
     align-items: center;
-    gap: 16px;
+    gap: 12px;
 }
 
-.app-header .user-badge {
+.win-header-panel .win-badge {
     background: rgba(255, 255, 255, 0.15);
-    padding: 6px 14px;
-    border-radius: 20px;
+    padding: 4px 10px;
+    border-radius: 4px;
     font-size: 13px;
     font-weight: 600;
-    display: flex;
-    align-items: center;
-    gap: 8px;
+    color: #ffffff;
 }
 
-.app-header .user-badge .role-tag {
-    background: #ffffff;
-    color: #1b4332;
-    padding: 2px 8px;
-    border-radius: 12px;
-    font-size: 11px;
-    text-transform: uppercase;
-    font-weight: 700;
-}
-
-.btn-logout {
-    background: #c92a2a;
+.win-btn-logout {
+    background-color: var(--win-indian-red);
     color: #ffffff;
     border: none;
-    padding: 8px 16px;
-    border-radius: var(--radius-sm);
-    font-size: 13px;
+    padding: 6px 14px;
+    font-size: 12.5px;
     font-weight: 600;
+    border-radius: 2px;
     cursor: pointer;
-    text-decoration: none;
-    display: inline-flex;
-    align-items: center;
-    gap: 6px;
-    transition: background 0.15s ease;
-}
-
-.btn-logout:hover {
-    background: #a61e1e;
-}
-
-.main-wrapper {
-    max-width: 1440px;
-    margin: 0 auto;
-    padding: 20px 24px 60px 24px;
-}
-
-.tab-navigation {
-    display: flex;
-    border-bottom: 2px solid #d1d5db;
-    background: #ffffff;
-    border-radius: var(--radius-md) var(--radius-md) 0 0;
-    padding: 4px 12px 0 12px;
-    gap: 4px;
-    margin-bottom: 0;
-    box-shadow: var(--shadow-sm);
-    overflow-x: auto;
-}
-
-.tab-btn {
-    background: none;
-    border: none;
-    padding: 12px 24px;
-    font-size: 15px;
-    font-weight: 600;
-    color: var(--text-secondary);
-    cursor: pointer;
-    border-bottom: 3px solid transparent;
-    transition: all 0.15s ease;
-    white-space: nowrap;
     text-decoration: none;
     display: inline-block;
 }
 
-.tab-btn:hover {
-    color: var(--dcss-forest);
-    background: #f9fafb;
+.win-btn-logout:hover {
+    background-color: #b23b3b;
 }
 
-.tab-btn.active {
-    color: var(--dcss-forest);
-    border-bottom: 3px solid var(--dcss-forest);
+/* Page Frame */
+.win-container {
+    max-width: 1400px;
+    margin: 14px auto 30px auto;
+    padding: 0 16px;
+}
+
+/* Windows TabControl Imitation (tabFaculty) */
+.win-tabcontrol {
     background: #ffffff;
+    border: 1px solid var(--win-border);
+    border-radius: 3px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
 }
 
-.tab-content {
-    background: #ffffff;
-    border-radius: 0 0 var(--radius-md) var(--radius-md);
-    padding: 28px;
-    box-shadow: var(--shadow-md);
-    min-height: 600px;
+.win-tab-strip {
+    display: flex;
+    background-color: #e2e8f0;
+    border-bottom: 1px solid #cbd5e1;
+    padding: 6px 6px 0 6px;
+    gap: 3px;
+    overflow-x: auto;
 }
 
-.section-banner {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 18px 24px;
-    margin-bottom: 24px;
-    border-left: 5px solid var(--dcss-green);
+.win-tab-item {
+    padding: 8px 24px;
+    font-size: 13.5px;
+    font-weight: 600;
+    color: #475569;
+    text-decoration: none;
+    background-color: #cbd5e1;
+    border: 1px solid #94a3b8;
+    border-bottom: none;
+    border-radius: 4px 4px 0 0;
+    cursor: pointer;
+    display: inline-block;
+    transition: all 0.1s ease;
 }
 
-.section-banner h1, .section-banner h2 {
-    font-size: 22px;
+.win-tab-item:hover {
+    background-color: #f1f5f9;
+    color: #0f172a;
+}
+
+.win-tab-item.active {
+    background-color: #ffffff;
+    color: #004000;
+    border-color: #94a3b8;
+    border-bottom: 2px solid #ffffff;
+    margin-bottom: -1px;
+    padding-top: 9px;
+}
+
+/* Tab Page Body (TabPage) */
+.win-tab-page {
+    padding: 20px;
+    background-color: #ffffff;
+    min-height: 640px;
+}
+
+/* Section Header Panel (panel5 / panel4 / pnlHeaderSetting) */
+.win-section-header {
+    background-color: #ffffff;
+    border: 1px solid #e2e8f0;
+    border-left: 5px solid #004000;
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    border-radius: 2px;
+}
+
+.win-section-header h2 {
+    font-size: 19px;
     font-weight: 700;
-    color: var(--dcss-forest);
+    color: #004000;
+    margin-bottom: 2px;
+}
+
+.win-section-header p {
+    font-size: 12.5px;
+    color: #64748b;
+}
+
+/* WinForms Overview Metric Cards (pnlTotal, pnlPending, pnlApproved, pnlDeclined) */
+.win-metric-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+    gap: 12px;
+    margin-bottom: 18px;
+}
+
+.win-card-panel {
+    background-color: #ffffff;
+    border: 1px solid #cbd5e1;
+    padding: 14px 18px;
+    border-radius: 3px;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
+}
+
+.win-card-panel.card-total { border-top: 3px solid #3b82f6; }
+.win-card-panel.card-pending { border-top: 3px solid #f59e0b; }
+.win-card-panel.card-approved { border-top: 3px solid #10b981; }
+.win-card-panel.card-declined { border-top: 3px solid #ef4444; }
+
+.win-card-label {
+    font-size: 12px;
+    font-weight: 700;
+    text-transform: uppercase;
+    color: #64748b;
     margin-bottom: 4px;
 }
 
-.section-banner p {
-    font-size: 14px;
-    color: var(--text-secondary);
+.win-card-value {
+    font-size: 26px;
+    font-weight: 700;
+    color: #0f172a;
 }
 
-.kpi-grid {
+/* GroupBox (grpOverview / grpRecentMeet / groupBox1 / groupBox2) */
+.win-groupbox {
+    border: 1px solid #cbd5e1;
+    border-radius: 4px;
+    padding: 16px 18px;
+    margin-bottom: 18px;
+    background-color: #ffffff;
+}
+
+.win-groupbox-title {
+    font-size: 15px;
+    font-weight: 700;
+    color: #004000;
+    margin-bottom: 12px;
+    padding-bottom: 6px;
+    border-bottom: 1px solid #f1f5f9;
+}
+
+/* Today's Meeting Summary Sub-Panels (panel1, panel2 inside grpOverview) */
+.win-overview-subpanels {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-    gap: 16px;
-    margin-bottom: 24px;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-bottom: 16px;
 }
 
-.kpi-card {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 18px 20px;
-    box-shadow: var(--shadow-sm);
-    transition: transform 0.15s ease, box-shadow 0.15s ease;
+.win-subpanel {
+    border: 1px solid #cbd5e1;
+    background-color: #f8fafc;
+    padding: 10px 16px;
+    border-radius: 3px;
     display: flex;
-    flex-direction: column;
+    align-items: center;
     justify-content: space-between;
 }
 
-.kpi-card:hover {
-    transform: translateY(-2px);
-    box-shadow: var(--shadow-md);
-}
-
-.kpi-card.kpi-total { border-top: 4px solid #3b82f6; }
-.kpi-card.kpi-pending { border-top: 4px solid #f59e0b; }
-.kpi-card.kpi-approved { border-top: 4px solid #10b981; }
-.kpi-card.kpi-declined { border-top: 4px solid #ef4444; }
-.kpi-card.kpi-today { border-top: 4px solid #8b5cf6; }
-.kpi-card.kpi-upcoming { border-top: 4px solid #06b6d4; }
-
-.kpi-title {
-    font-size: 13px;
+.win-subpanel-title {
+    font-size: 13.5px;
     font-weight: 600;
-    text-transform: uppercase;
-    color: var(--text-secondary);
-    letter-spacing: 0.04em;
-    margin-bottom: 8px;
+    color: #1e293b;
 }
 
-.kpi-value {
-    font-size: 32px;
+.win-subpanel-value {
+    font-size: 20px;
     font-weight: 700;
-    color: var(--text-primary);
-    line-height: 1;
+    color: #004000;
 }
 
-.notification-box {
-    background: #eff6ff;
-    border: 1px solid #bfdbfe;
-    border-radius: var(--radius-md);
-    padding: 14px 20px;
+/* Notification Bar (pnlNotifs) */
+.win-notif-bar {
+    background-color: #ecfdf5;
+    border: 1px solid #a7f3d0;
+    color: #065f46;
+    padding: 10px 16px;
+    border-radius: 3px;
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin-bottom: 24px;
-    gap: 16px;
-}
-
-.notification-message {
-    color: #1e40af;
-    font-size: 14px;
+    margin-bottom: 16px;
+    font-size: 13.5px;
     font-weight: 600;
 }
 
-.table-responsive {
+/* WinForms DataGridView Imitation (dataGridView1, dataGridView2, Requests) */
+.win-datagrid-wrap {
     width: 100%;
     overflow-x: auto;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    margin-top: 12px;
-    margin-bottom: 24px;
+    border: 1px solid #cbd5e1;
+    background-color: #ffffff;
+    border-radius: 2px;
+    margin-top: 10px;
 }
 
-.data-table {
+.win-datagrid {
     width: 100%;
     border-collapse: collapse;
-    font-size: 14px;
+    font-size: 13px;
     text-align: left;
-    background: #ffffff;
 }
 
-.data-table thead th {
-    background: #f8fafc;
-    color: var(--text-secondary);
+.win-datagrid thead th {
+    background-color: #f1f5f9;
+    color: #334155;
     font-weight: 700;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-color);
+    padding: 9px 12px;
+    border-bottom: 1px solid #cbd5e1;
+    border-right: 1px solid #e2e8f0;
     white-space: nowrap;
 }
 
-.data-table tbody td {
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border-light);
-    color: var(--text-primary);
+.win-datagrid thead th:last-child {
+    border-right: none;
 }
 
-.data-table tbody tr:hover {
-    background: #f9fafb;
+.win-datagrid tbody td {
+    padding: 9px 12px;
+    border-bottom: 1px solid #f1f5f9;
+    border-right: 1px solid #f8fafc;
+    color: #1e293b;
+    vertical-align: middle;
 }
 
-.badge {
+.win-datagrid tbody td:last-child {
+    border-right: none;
+}
+
+.win-datagrid tbody tr:hover {
+    background-color: #f8fafc;
+}
+
+/* Status Badges */
+.win-status-badge {
     display: inline-block;
-    padding: 4px 10px;
-    border-radius: 12px;
-    font-size: 12px;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-size: 11.5px;
     font-weight: 700;
     text-transform: capitalize;
 }
 
-.badge-pending { background: #fef3c7; color: #92400e; }
-.badge-approved { background: #d1fae5; color: #065f46; }
-.badge-declined { background: #fee2e2; color: #991b1b; }
-.badge-completed { background: #e0e7ff; color: #3730a3; }
-.badge-cancelled { background: #f3f4f6; color: #4b5563; }
+.status-pending { background-color: #fef3c7; color: #92400e; border: 1px solid #fde68a; }
+.status-approved { background-color: #d1fae5; color: #065f46; border: 1px solid #a7f3d0; }
+.status-declined { background-color: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+.status-completed { background-color: #e0e7ff; color: #3730a3; border: 1px solid #c7d2fe; }
+.status-cancelled { background-color: #f1f5f9; color: #475569; border: 1px solid #cbd5e1; }
 
-.toolbar-row {
+/* Filter & Action Toolbars */
+.win-toolbar {
     display: flex;
     justify-content: space-between;
     align-items: center;
     flex-wrap: wrap;
-    gap: 14px;
-    margin-bottom: 16px;
+    gap: 10px;
+    margin-bottom: 12px;
 }
 
-.filter-group {
+.win-filter-set {
     display: flex;
     align-items: center;
-    gap: 12px;
+    gap: 8px;
     flex-wrap: wrap;
 }
 
-.input-search, .select-filter, .form-control {
-    padding: 8px 14px;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-sm);
-    font-size: 14px;
-    color: var(--text-primary);
-    background: #ffffff;
-    transition: border-color 0.15s ease;
-}
-
-.input-search:focus, .select-filter:focus, .form-control:focus {
+.win-textbox {
+    height: 32px;
+    padding: 4px 10px;
+    font-size: 13px;
+    border: 1px solid #94a3b8;
+    border-radius: 2px;
+    color: #1e293b;
+    background-color: #ffffff;
     outline: none;
-    border-color: var(--dcss-green);
-    box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
+    font-family: inherit;
 }
 
-.btn {
-    padding: 9px 18px;
-    border-radius: var(--radius-sm);
-    font-size: 14px;
+.win-textbox:focus {
+    border-color: #004000;
+    box-shadow: 0 0 0 1px #004000;
+}
+
+.win-combobox {
+    height: 32px;
+    padding: 4px 8px;
+    font-size: 13px;
+    border: 1px solid #94a3b8;
+    border-radius: 2px;
+    color: #1e293b;
+    background-color: #ffffff;
+    outline: none;
+    font-family: inherit;
+}
+
+/* Windows Action Buttons (matching button1, button2, button3, AddBTN, etc.) */
+.win-btn {
+    height: 32px;
+    padding: 0 14px;
+    font-size: 12.5px;
     font-weight: 600;
-    cursor: pointer;
     border: none;
-    text-decoration: none;
+    border-radius: 2px;
+    cursor: pointer;
+    font-family: inherit;
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    gap: 6px;
-    transition: background-color 0.15s ease, transform 0.1s ease;
+    text-decoration: none;
+    transition: opacity 0.1s ease;
 }
 
-.btn:active {
-    transform: scale(0.98);
+.win-btn:hover {
+    opacity: 0.9;
 }
 
-.btn-primary { background: #2563eb; color: #ffffff; }
-.btn-primary:hover { background: #1d4ed8; }
+.win-btn-green { background-color: #2e8b57; color: #ffffff; }
+.win-btn-forest { background-color: #228b22; color: #ffffff; }
+.win-btn-red { background-color: #cd5c5c; color: #ffffff; }
+.win-btn-blue { background-color: #6495ed; color: #ffffff; }
+.win-btn-gray { background-color: #cbd5e1; color: #334155; }
 
-.btn-success { background: #16a34a; color: #ffffff; }
-.btn-success:hover { background: #15803d; }
-
-.btn-danger { background: #dc2626; color: #ffffff; }
-.btn-danger:hover { background: #b91c1c; }
-
-.btn-secondary { background: #6b7280; color: #ffffff; }
-.btn-secondary:hover { background: #4b5563; }
-
-.btn-outline { background: transparent; border: 1px solid var(--border-color); color: var(--text-primary); }
-.btn-outline:hover { background: #f3f4f6; }
-
-.two-column-layout {
+/* 2-Column Windows Form Grid (Availability Tab: groupBox1 & groupBox2) */
+.win-two-col {
     display: grid;
-    grid-template-columns: 380px 1fr;
-    gap: 24px;
+    grid-template-columns: 360px 1fr;
+    gap: 16px;
 }
 
-@media (max-width: 992px) {
-    .two-column-layout {
+@media (max-width: 900px) {
+    .win-two-col {
+        grid-template-columns: 1fr;
+    }
+    .win-overview-subpanels {
         grid-template-columns: 1fr;
     }
 }
 
-.panel-card {
-    background: #ffffff;
-    border: 1px solid var(--border-color);
-    border-radius: var(--radius-md);
-    padding: 22px;
-    box-shadow: var(--shadow-sm);
+.win-field-group {
+    margin-bottom: 12px;
 }
 
-.panel-card-title {
-    font-size: 17px;
-    font-weight: 700;
-    color: var(--dcss-forest);
-    margin-bottom: 16px;
-    padding-bottom: 10px;
-    border-bottom: 1px solid var(--border-light);
-}
-
-.form-group {
-    margin-bottom: 16px;
-}
-
-.form-label {
+.win-field-label {
     display: block;
-    font-size: 13px;
+    font-size: 12.5px;
     font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: 6px;
+    color: #1e293b;
+    margin-bottom: 4px;
 }
 
-.form-control {
-    width: 100%;
-}
-
-.form-actions {
+.win-form-actions {
     display: flex;
-    gap: 10px;
-    margin-top: 20px;
+    gap: 8px;
+    margin-top: 16px;
 }
-
-.settings-grid {
-    display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(360px, 1fr));
-    gap: 24px;
-}
-
-.auth-page {
-    min-height: 100vh;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    background: linear-gradient(135deg, #1b4332 0%, #2d6a4f 50%, #40916c 100%);
-    padding: 20px;
-}
-
-.auth-card {
-    background: #ffffff;
-    border-radius: var(--radius-lg);
-    box-shadow: var(--shadow-lg);
-    width: 100%;
-    max-width: 440px;
-    padding: 36px;
-}
-
-.auth-header {
-    text-align: center;
-    margin-bottom: 28px;
-}
-
-.auth-logo {
-    height: 70px;
-    margin-bottom: 14px;
-}
-
-.auth-title {
-    font-size: 22px;
-    font-weight: 700;
-    color: var(--dcss-forest);
-}
-
-.auth-subtitle {
-    font-size: 14px;
-    color: var(--text-secondary);
-}
-
-@media (max-width: 768px) {
-    .app-header {
-        flex-direction: column;
-        align-items: flex-start;
-        gap: 12px;
-    }
-    
-    .app-header .header-user {
-        width: 100%;
-        justify-content: space-between;
-    }
-
-    .toolbar-row {
-        flex-direction: column;
-        align-items: stretch;
-    }
-
-    .filter-group {
-        width: 100%;
-    }
-
-    .filter-group .input-search, .filter-group .select-filter {
-        flex: 1;
-    }
-}
-
