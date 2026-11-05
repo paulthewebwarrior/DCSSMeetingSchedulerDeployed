@@ -258,14 +258,14 @@ namespace DCSSMeetingScheduler.Faculty
             dataGridView2.ColumnHeadersHeight = 34;
             dataGridView2.ColumnHeadersHeightSizeMode = DataGridViewColumnHeadersHeightSizeMode.DisableResizing;
             dataGridView2.Columns.AddRange(new DataGridViewColumn[] { request_id, Stud_Name, Date, Start, End, MStatus, FRemarks });
-            dataGridView2.Location = new Point(16, 422);
+            dataGridView2.Location = new Point(16, 392);
             dataGridView2.Margin = new Padding(2);
             dataGridView2.Name = "dataGridView2";
             dataGridView2.ReadOnly = true;
             dataGridView2.RowHeadersVisible = false;
             dataGridView2.RowHeadersWidth = 62;
             dataGridView2.RowHeadersWidthSizeMode = DataGridViewRowHeadersWidthSizeMode.DisableResizing;
-            dataGridView2.Size = new Size(1230, 149);
+            dataGridView2.Size = new Size(1230, 179);
             dataGridView2.TabIndex = 14;
             // 
             // request_id
@@ -677,7 +677,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabRequest.Margin = new Padding(2);
             tabRequest.Name = "tabRequest";
             tabRequest.Padding = new Padding(2);
-            tabRequest.Size = new Size(1258, 564);
+            tabRequest.Size = new Size(1258, 635);
             tabRequest.TabIndex = 1;
             tabRequest.Text = "Request";
             tabRequest.Click += tabRequest_Click;
@@ -698,7 +698,7 @@ namespace DCSSMeetingScheduler.Faculty
             Requests.ReadOnly = true;
             Requests.RowHeadersVisible = false;
             Requests.RowHeadersWidth = 62;
-            Requests.Size = new Size(1238, 221);
+            Requests.Size = new Size(1238, 292);
             Requests.TabIndex = 17;
             // 
             // Req_ID
@@ -996,7 +996,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabAvailability.Margin = new Padding(2);
             tabAvailability.Name = "tabAvailability";
             tabAvailability.Padding = new Padding(2);
-            tabAvailability.Size = new Size(1258, 564);
+            tabAvailability.Size = new Size(1258, 635);
             tabAvailability.TabIndex = 2;
             tabAvailability.Text = "Availabillity";
             tabAvailability.Click += AvailabilityPage_Click;
@@ -1293,7 +1293,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabSettings.Margin = new Padding(2);
             tabSettings.Name = "tabSettings";
             tabSettings.Padding = new Padding(2);
-            tabSettings.Size = new Size(1258, 564);
+            tabSettings.Size = new Size(1258, 635);
             tabSettings.TabIndex = 3;
             tabSettings.Text = "Setting";
             // 
