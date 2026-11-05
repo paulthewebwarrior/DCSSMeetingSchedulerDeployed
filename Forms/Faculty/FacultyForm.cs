@@ -271,8 +271,8 @@ namespace DCSSMeetingScheduler.Faculty
             string newPassword = txtNewPassword.Text.Trim();
             string confirmPassword = txtConfirmPassword.Text.Trim();
 
-            if (string.IsNullOrWhiteSpace(currentPassword) || 
-                string.IsNullOrWhiteSpace(newPassword) || 
+            if (string.IsNullOrWhiteSpace(currentPassword) ||
+                string.IsNullOrWhiteSpace(newPassword) ||
                 string.IsNullOrWhiteSpace(confirmPassword))
             {
                 MessageBox.Show("Please fill in all password fields.", "Validation", MessageBoxButtons.OK, MessageBoxIcon.Warning);
@@ -883,9 +883,9 @@ namespace DCSSMeetingScheduler.Faculty
             }
 
             DialogResult result = MessageBox.Show(
-                "Are you sure you want to delete this schedule?", 
-                "Delete Confirmation", 
-                MessageBoxButtons.YesNo, 
+                "Are you sure you want to delete this schedule?",
+                "Delete Confirmation",
+                MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
             );
 
@@ -938,9 +938,9 @@ namespace DCSSMeetingScheduler.Faculty
         private void btnLogout_Click(object sender, EventArgs e)
         {
             DialogResult result = MessageBox.Show(
-                "Are you sure you want to log out?", 
-                "Log Out", 
-                MessageBoxButtons.YesNo, 
+                "Are you sure you want to log out?",
+                "Log Out",
+                MessageBoxButtons.YesNo,
                 MessageBoxIcon.Question
             );
 
@@ -967,6 +967,11 @@ namespace DCSSMeetingScheduler.Faculty
         private void tabHome_Click(object sender, EventArgs e)
         {
             LoadHomePage();
+        }
+
+        private void button2_Click_1(object sender, EventArgs e)
+        {
+            button2_Click(sender, e);
         }
     }
 }
