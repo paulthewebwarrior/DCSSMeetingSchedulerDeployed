@@ -223,7 +223,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabFaculty.Margin = new Padding(2);
             tabFaculty.Name = "tabFaculty";
             tabFaculty.SelectedIndex = 0;
-            tabFaculty.Size = new Size(1266, 592);
+            tabFaculty.Size = new Size(1266, 663);
             tabFaculty.TabIndex = 0;
             // 
             // tabHome
@@ -242,7 +242,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabHome.Margin = new Padding(2);
             tabHome.Name = "tabHome";
             tabHome.Padding = new Padding(2);
-            tabHome.Size = new Size(1258, 643);
+            tabHome.Size = new Size(1258, 635);
             tabHome.TabIndex = 0;
             tabHome.Text = "Home";
             // 
@@ -677,7 +677,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabRequest.Margin = new Padding(2);
             tabRequest.Name = "tabRequest";
             tabRequest.Padding = new Padding(2);
-            tabRequest.Size = new Size(1258, 643);
+            tabRequest.Size = new Size(1258, 564);
             tabRequest.TabIndex = 1;
             tabRequest.Text = "Request";
             tabRequest.Click += tabRequest_Click;
@@ -996,7 +996,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabAvailability.Margin = new Padding(2);
             tabAvailability.Name = "tabAvailability";
             tabAvailability.Padding = new Padding(2);
-            tabAvailability.Size = new Size(1258, 643);
+            tabAvailability.Size = new Size(1258, 564);
             tabAvailability.TabIndex = 2;
             tabAvailability.Text = "Availabillity";
             tabAvailability.Click += AvailabilityPage_Click;
@@ -1293,7 +1293,7 @@ namespace DCSSMeetingScheduler.Faculty
             tabSettings.Margin = new Padding(2);
             tabSettings.Name = "tabSettings";
             tabSettings.Padding = new Padding(2);
-            tabSettings.Size = new Size(1258, 643);
+            tabSettings.Size = new Size(1258, 564);
             tabSettings.TabIndex = 3;
             tabSettings.Text = "Setting";
             // 
@@ -1891,7 +1891,7 @@ namespace DCSSMeetingScheduler.Faculty
             AutoScaleDimensions = new SizeF(7F, 15F);
             AutoScaleMode = AutoScaleMode.Font;
             BackColor = Color.DarkGreen;
-            ClientSize = new Size(1264, 636);
+            ClientSize = new Size(1264, 707);
             Controls.Add(tabFaculty);
             Controls.Add(pnlHeader);
             Margin = new Padding(2);
