@@ -40,21 +40,30 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             if ($stmt->fetch()) {
                 $error = "An account with this email address already exists.";
             } else {
+                $targetRole = in_array($role, ['Faculty', 'Student'], true) ? $role : 'Student';
+                // Students are immediately active; Faculty requires admin approval before login
+                $isActive = ($targetRole === 'Faculty') ? 0 : 1;
+
                 $stmt = $db->prepare("
                     INSERT INTO users (ue_email, user_password, first_name, last_name, role, id_number, program_or_dept, is_active, must_change_password)
-                    VALUES (:email, :password, :fname, :lname, :role, :idnum, :dept, 1, 0)
+                    VALUES (:email, :password, :fname, :lname, :role, :idnum, :dept, :is_active, 0)
                 ");
                 $stmt->execute([
-                    ':email'    => $email,
-                    ':password' => $password,
-                    ':fname'    => $firstName,
-                    ':lname'    => $lastName,
-                    ':role'     => in_array($role, ['Faculty', 'Student'], true) ? $role : 'Student',
-                    ':idnum'    => $idNumber,
-                    ':dept'     => $program
+                    ':email'     => $email,
+                    ':password'  => $password,
+                    ':fname'     => $firstName,
+                    ':lname'     => $lastName,
+                    ':role'      => $targetRole,
+                    ':idnum'     => $idNumber,
+                    ':dept'      => $program,
+                    ':is_active' => $isActive
                 ]);
 
-                Flash::set('success', 'Registration successful! You may now log in.');
+                if ($targetRole === 'Faculty') {
+                    Flash::set('info', 'Registration submitted! Faculty accounts require administrator approval before logging in. Please wait for an administrator to verify and approve your account.');
+                } else {
+                    Flash::set('success', 'Registration successful! Your student account is active. You may now log in.');
+                }
                 header('Location: login.php');
                 exit;
             }
@@ -105,7 +114,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
                 <div class="form-group">
                     <label class="form-label" for="role">Role</label>
-                    <select id="role" name="role" class="form-control">
+                    <select id="role" name="role" class="form-control" onchange="updateRoleNotice()">
                         <option value="Student" <?= $role === 'Student' ? 'selected' : '' ?>>Student</option>
                         <option value="Faculty" <?= $role === 'Faculty' ? 'selected' : '' ?>>Faculty</option>
                     </select>
@@ -114,6 +123,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     <label class="form-label" for="id_number">ID Number</label>
                     <input type="text" id="id_number" name="id_number" class="form-control" placeholder="e.g. 2022-0001" value="<?= htmlspecialchars($idNumber) ?>">
                 </div>
+            </div>
+
+            <div id="role-approval-notice" style="margin-top:-6px; margin-bottom:14px; padding:10px 14px; border-radius:6px; font-size:13px; line-height:1.45; display:flex; align-items:flex-start; gap:10px;">
+                <!-- Populated via JavaScript based on selected role -->
             </div>
 
             <div class="form-group">
@@ -132,7 +145,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 </div>
             </div>
 
-            <button type="submit" class="btn btn-success" style="width:100%; padding:12px; font-size:15px; margin-top:8px;">
+            <button type="submit" id="submit-btn" class="btn btn-success" style="width:100%; padding:12px; font-size:15px; margin-top:8px;">
                 Register
             </button>
 
@@ -141,6 +154,31 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             </div>
         </form>
     </div>
+
+    <script>
+    function updateRoleNotice() {
+        const roleSelect = document.getElementById('role');
+        const notice = document.getElementById('role-approval-notice');
+        const submitBtn = document.getElementById('submit-btn');
+        if (!roleSelect || !notice) return;
+
+        if (roleSelect.value === 'Faculty') {
+            notice.style.background = '#fef3c7';
+            notice.style.border = '1px solid #fde68a';
+            notice.style.color = '#92400e';
+            notice.innerHTML = '<span style="font-size:16px; line-height:1;">⏳</span> <div><strong>Faculty Account Verification:</strong> Faculty registrations require administrator approval before you can access the system. Your account will be submitted for verification.</div>';
+            if (submitBtn) submitBtn.textContent = 'Submit Registration for Approval';
+        } else {
+            notice.style.background = '#ecfdf5';
+            notice.style.border = '1px solid #a7f3d0';
+            notice.style.color = '#065f46';
+            notice.innerHTML = '<span style="font-size:16px; line-height:1;">✓</span> <div><strong>Instant Student Activation:</strong> Student accounts are activated immediately upon registration without waiting for approval.</div>';
+            if (submitBtn) submitBtn.textContent = 'Register Student Account';
+        }
+    }
+    document.addEventListener('DOMContentLoaded', updateRoleNotice);
+    updateRoleNotice();
+    </script>
 </body>
 </html>
 

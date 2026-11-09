@@ -25,7 +25,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
             if ($user && $user['user_password'] === $password) {
                 if (!$user['is_active']) {
-                    $error = "Your account is currently disabled. Please contact the administrator.";
+                    if ($user['role'] === 'Faculty') {
+                        $error = "Your faculty account is pending administrator approval. Please wait for an administrator to verify and approve your registration.";
+                    } else {
+                        $error = "Your account is currently disabled. Please contact the administrator.";
+                    }
                 } else {
                     Auth::login($user);
                     switch ($user['role']) {
