@@ -26,10 +26,31 @@ class Flash {
         }
         $type = htmlspecialchars($flash['type']);
         $msg  = htmlspecialchars($flash['message']);
-        $bg = ($type === 'error') ? '#f8d7da' : (($type === 'warning') ? '#fff3cd' : '#d4edda');
-        $color = ($type === 'error') ? '#721c24' : (($type === 'warning') ? '#856404' : '#155724');
-        $border = ($type === 'error') ? '#f5c6cb' : (($type === 'warning') ? '#ffeeba' : '#c3e6cb');
-        return "<div class='alert-banner' role='alert' tabindex='-1' style='background:{$bg}; color:{$color}; border:1px solid {$border}; padding:12px 18px; border-radius:6px; margin-bottom:18px; font-weight:500; font-size:14px; display:flex; align-items:center; justify-content:space-between;'><span>{$msg}</span><button type='button' aria-label='Dismiss notification' onclick='this.parentElement.remove()' style='background:none; border:none; color:inherit; font-size:18px; cursor:pointer;'>&times;</button></div>";
+
+        switch ($type) {
+            case 'error':
+                $bg = '#fee2e2';
+                $color = '#991b1b';
+                $border = '#fca5a5';
+                break;
+            case 'warning':
+                $bg = '#fef3c7';
+                $color = '#92400e';
+                $border = '#fde68a';
+                break;
+            case 'info':
+                $bg = '#e0f2fe';
+                $color = '#0369a1';
+                $border = '#bae6fd';
+                break;
+            default: // success
+                $bg = '#d1fae5';
+                $color = '#065f46';
+                $border = '#a7f3d0';
+                break;
+        }
+
+        return "<div class='alert-banner' style='background:{$bg}; color:{$color}; border:1px solid {$border}; padding:12px 18px; border-radius:6px; margin-bottom:18px; font-weight:500; font-size:14px; display:flex; align-items:center; justify-content:space-between;'><span>{$msg}</span><button onclick='this.parentElement.remove()' style='background:none; border:none; color:inherit; font-size:18px; cursor:pointer;'>&times;</button></div>";
     }
 }
 

@@ -75,14 +75,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                             <?= App::csrfField() ?>
             <div class="form-group">
                 <label class="form-label" for="email">UE Email Address</label>
-                <input maxlength="100" type="email" id="email" name="email" class="form-control" 
-                       placeholder="e.g. name@ue.edu.ph" 
+                <input maxlength="100" type="email" id="email" name="email" class="form-control"
+                       placeholder="e.g. name@ue.edu.ph"
+                       pattern="^[a-zA-Z0-9._%+-]+@ue\.edu\.ph$"
+                       title="Please enter a valid UE email address ending with @ue.edu.ph"
                        value="<?= htmlspecialchars($email) ?>" required autofocus>
             </div>
 
             <div class="form-group">
                 <label class="form-label" for="password">Password</label>
-                <input autocomplete="current-password" maxlength="64" type="password" id="password" name="password" class="form-control" 
+                <input autocomplete="current-password" maxlength="64" type="password" id="password" name="password" class="form-control"
                        placeholder="Enter your password" required>
             </div>
 
@@ -98,16 +100,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 Log In
             </button>
         </form>
-
-        <div style="margin-top:24px; padding-top:16px; border-top:1px solid var(--border-light); font-size:12px; color:var(--text-muted); text-align:center;">
-            <strong>Demo Accounts (password: password123):</strong><br>
-            Faculty: <code>Batecan.Vince@ue.edu.ph</code><br>
-            Student: <code>Reyes.Jane@ue.edu.ph</code><br>
-            Admin: <code>Camacho.Paul@ue.edu.ph</code>
-        </div>
     </div>
     <?= App::formState() ?>
     <script src="assets/validation.js" defer></script>
 </body>
 </html>
-

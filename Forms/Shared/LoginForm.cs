@@ -62,6 +62,21 @@ namespace DCSSMeetingScheduler
                 return;
             }
 
+            if (!user.IsActive)
+            {
+                if (user.Role == UserRole.Faculty)
+                {
+                    loginErrorProvider.SetError(txtEmail, "Faculty account pending administrator approval.");
+                    MessageBox.Show(this, "Your faculty account is pending administrator approval. Please wait for an administrator to verify and activate your account.", "Pending Approval", MessageBoxButtons.OK, MessageBoxIcon.Information);
+                }
+                else
+                {
+                    loginErrorProvider.SetError(txtEmail, "Account disabled.");
+                    MessageBox.Show(this, "Your account is currently disabled. Please contact the administrator.", "Account Disabled", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+                return;
+            }
+
             Form? dashboard = user.Role switch
             {
                 UserRole.Admin => new AdminForm(user),

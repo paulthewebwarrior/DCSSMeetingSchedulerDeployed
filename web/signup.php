@@ -26,8 +26,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         if ($stmt->fetch()) {
             throw new ValidationException('An account with this email address already exists.');
         }
-        $stmt = $db->prepare('INSERT INTO users (ue_email, user_password, first_name, last_name, role, id_number, program_or_dept, is_active, must_change_password, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, 1, 0, NULL)');
-        $stmt->execute([$email, $password, $firstName, $lastName, $role, $idNumber, $program]);
+        $stmt = $db->prepare('INSERT INTO users (ue_email, user_password, first_name, last_name, role, id_number, program_or_dept, is_active, must_change_password, email_verified_at) VALUES (?, ?, ?, ?, ?, ?, ?, ?, 0, NULL)');
+        $stmt->execute([$email, $password, $firstName, $lastName, $role, $idNumber, $program, $role === 'Faculty' ? 0 : 1]);
         unset($_SESSION['old_input']);
         $_SESSION['verification_email'] = $email;
         try {
@@ -89,8 +89,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 <div class="form-group">
                     <label class="form-label" for="role">Role</label>
                     <select id="role" name="role" class="form-control">
-                        <option value="Student">Student</option>
-                        <option value="Faculty">Faculty</option>
+                        <option value="Student" <?= $role === 'Student' ? 'selected' : '' ?>>Student</option>
+                        <option value="Faculty" <?= $role === 'Faculty' ? 'selected' : '' ?>>Faculty</option>
                     </select>
                 </div>
                 <div class="form-group">
