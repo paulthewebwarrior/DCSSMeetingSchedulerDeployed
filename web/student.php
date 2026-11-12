@@ -2,114 +2,12 @@
 require_once __DIR__ . '/includes/Database.php';
 require_once __DIR__ . '/includes/Auth.php';
 require_once __DIR__ . '/includes/Flash.php';
+require_once __DIR__ . '/includes/Actions.php';
 
 $user = Auth::requireRole('Student');
 $db = Database::getConnection();
-
-$stmt = $db->prepare("SELECT * FROM users WHERE user_id = :id");
-$stmt->execute([':id' => $user['user_id']]);
-$user = $stmt->fetch();
-$_SESSION['user'] = $user;
-
-$currentTab = $_GET['tab'] ?? 'dashboard';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-
-    if ($action === 'book_appointment') {
-        $facultyId = (int)($_POST['faculty_id'] ?? 0);
-        $date      = trim($_POST['meeting_date'] ?? '');
-        $startTime = trim($_POST['start_time'] ?? '');
-        $endTime   = trim($_POST['end_time'] ?? '');
-        $purpose   = trim($_POST['purpose'] ?? '');
-
-        if ($facultyId <= 0 || empty($date) || empty($startTime) || empty($purpose)) {
-            Flash::set('error', 'Please fill in all required fields.');
-        } else {
-            $meetingStart = "{$date} {$startTime}:00";
-            $meetingEnd   = !empty($endTime) ? "{$date} {$endTime}:00" : null;
-
-            if (strtotime($meetingStart) <= time()) {
-                Flash::set('error', 'Please select a future meeting date and time.');
-            } else {
-                $stmt = $db->prepare("
-                    INSERT INTO appointments (student_id, faculty_id, meeting_datetime, meeting_end_datetime, purpose, status, is_student_notified, is_faculty_notified)
-                    VALUES (:sid, :fid, :start, :end, :purpose, 'Pending', 1, 0)
-                ");
-                $stmt->execute([
-                    ':sid'     => $user['user_id'],
-                    ':fid'     => $facultyId,
-                    ':start'   => $meetingStart,
-                    ':end'     => $meetingEnd,
-                    ':purpose' => $purpose
-                ]);
-                Flash::set('success', 'Consultation request submitted successfully!');
-                header('Location: student.php?tab=requests');
-                exit;
-            }
-        }
-        header('Location: student.php?tab=book');
-        exit;
-    }
-
-    if ($action === 'cancel_request') {
-        $appId = (int)($_POST['appointment_id'] ?? 0);
-        if ($appId > 0) {
-            $stmt = $db->prepare("
-                UPDATE appointments 
-                SET status = 'Cancelled' 
-                WHERE appointment_id = :id AND student_id = :sid AND status IN ('Pending', 'Approved')
-            ");
-            $stmt->execute([':id' => $appId, ':sid' => $user['user_id']]);
-            Flash::set('success', 'Meeting request cancelled successfully.');
-        }
-        header('Location: student.php?tab=requests');
-        exit;
-    }
-
-    if ($action === 'update_profile') {
-        $firstName = trim($_POST['first_name'] ?? '');
-        $lastName  = trim($_POST['last_name'] ?? '');
-        $idNum     = trim($_POST['id_number'] ?? '');
-        $program   = trim($_POST['program'] ?? '');
-
-        if (empty($firstName) || empty($lastName)) {
-            Flash::set('error', 'First name and last name are required.');
-        } else {
-            $stmt = $db->prepare("UPDATE users SET first_name = :fn, last_name = :ln, id_number = :idn, program_or_dept = :prog WHERE user_id = :id");
-            $stmt->execute([
-                ':fn'   => $firstName,
-                ':ln'   => $lastName,
-                ':idn'  => $idNum,
-                ':prog' => $program,
-                ':id'   => $user['user_id']
-            ]);
-            Flash::set('success', 'Profile updated successfully!');
-        }
-        header('Location: student.php?tab=settings');
-        exit;
-    }
-
-    if ($action === 'change_password') {
-        $currentPass = trim($_POST['current_password'] ?? '');
-        $newPass     = trim($_POST['new_password'] ?? '');
-        $confirmPass = trim($_POST['confirm_password'] ?? '');
-
-        if ($currentPass !== $user['user_password']) {
-            Flash::set('error', 'Current password is incorrect.');
-        } elseif (strlen($newPass) < 6) {
-            Flash::set('error', 'New password must be at least 6 characters long.');
-        } elseif ($newPass !== $confirmPass) {
-            Flash::set('error', 'New passwords do not match.');
-        } else {
-            $stmt = $db->prepare("UPDATE users SET user_password = :pwd WHERE user_id = :id");
-            $stmt->execute([':pwd' => $newPass, ':id' => $user['user_id']]);
-            Flash::set('success', 'Password updated successfully!');
-        }
-        header('Location: student.php?tab=settings');
-        exit;
-    }
-}
+$currentTab = Validation::choice($_GET, 'tab', ['dashboard', 'book', 'requests', 'settings'], 'dashboard');
+Actions::handle($db, $user, 'student', $currentTab);
 
 $stmtStats = $db->prepare("
     SELECT 
@@ -142,7 +40,13 @@ $myRequests = $stmtReq->fetchAll();
 
 $facultyList = $db->query("SELECT user_id, CONCAT(first_name, ' ', last_name) AS name, program_or_dept FROM users WHERE role = 'Faculty' AND is_active = 1 ORDER BY last_name, first_name")->fetchAll();
 
-$selectedFacultyId = (int)($_GET['faculty_select'] ?? ($facultyList[0]['user_id'] ?? 0));
+$oldFaculty = $_SESSION['old_input']['faculty_id'] ?? '';
+$defaultFaculty = is_string($oldFaculty) && ctype_digit($oldFaculty) && in_array((int)$oldFaculty, array_map('intval', array_column($facultyList, 'user_id')), true)
+    ? (int)$oldFaculty : (int)($facultyList[0]['user_id'] ?? 0);
+$selectedFacultyId = isset($_GET['faculty_select']) ? Validation::id($_GET, 'faculty_select') : $defaultFaculty;
+if ($selectedFacultyId && !in_array($selectedFacultyId, array_map('intval', array_column($facultyList, 'user_id')), true)) {
+    throw new ValidationException('Select an active faculty member.');
+}
 $stmtAvail = $db->prepare("
     SELECT availability_id, days, 
            TIME_FORMAT(start_time, '%h:%i %p') AS start_fmt,
@@ -177,9 +81,10 @@ $facultySchedules = $stmtAvail->fetchAll();
                 <span><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></span>
                 <span class="role-tag"><?= htmlspecialchars($user['role']) ?></span>
             </div>
-            <a href="logout.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
-                Log Out
-            </a>
+            <form method="POST" action="logout.php" onsubmit="return confirm('Are you sure you want to log out?');" style="margin:0;">
+                <?= App::csrfField() ?>
+                <button type="submit" class="btn-logout">Log Out</button>
+            </form>
         </div>
     </header>
 
@@ -274,7 +179,12 @@ $facultySchedules = $stmtAvail->fetchAll();
                 <div class="two-column-layout">
                     <div class="panel-card">
                         <h3 class="panel-card-title">Schedule Request</h3>
+                        <?php if (!$facultyList): ?>
+                            <p role="status">No faculty members are currently available. Please contact the administrator or check again later.</p>
+                        <?php endif; ?>
+                        <p class="form-hint">All times are Philippine time. Choose a start and end time within the faculty member's available hours.</p>
                         <form method="POST" action="student.php?tab=book">
+                            <?= App::csrfField() ?>
                             <input type="hidden" name="action" value="book_appointment">
 
                             <div class="form-group">
@@ -302,13 +212,13 @@ $facultySchedules = $stmtAvail->fetchAll();
                                 </div>
                                 <div class="form-group">
                                     <label class="form-label" for="end_time">End Time</label>
-                                    <input type="time" name="end_time" id="end_time" class="form-control">
+                                    <input required type="time" name="end_time" id="end_time" class="form-control">
                                 </div>
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label" for="purpose">Consultation Purpose / Topic</label>
-                                <textarea name="purpose" id="purpose" class="form-control" rows="3" 
+                                <textarea maxlength="255" name="purpose" id="purpose" class="form-control" rows="3" 
                                           placeholder="e.g. Thesis topic review, consultation regarding midterm exam, project guidance..." required></textarea>
                             </div>
 
@@ -406,6 +316,7 @@ $facultySchedules = $stmtAvail->fetchAll();
                                         <td>
                                             <?php if (in_array($r['status'], ['Pending', 'Approved'], true)): ?>
                                                 <form method="POST" onsubmit="return confirm('Cancel this meeting request?');">
+                            <?= App::csrfField() ?>
                                                     <input type="hidden" name="action" value="cancel_request">
                                                     <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
                                                     <button type="submit" class="btn btn-danger" style="padding:4px 10px; font-size:12px;">Cancel</button>
@@ -431,23 +342,24 @@ $facultySchedules = $stmtAvail->fetchAll();
                     <div class="panel-card">
                         <h3 class="panel-card-title">Personal Profile</h3>
                         <form method="POST" action="student.php?tab=settings">
+                            <?= App::csrfField() ?>
                             <input type="hidden" name="action" value="update_profile">
 
                             <div class="form-group">
                                 <label class="form-label" for="first_name">First Name</label>
-                                <input type="text" id="first_name" name="first_name" class="form-control" value="<?= htmlspecialchars($user['first_name']) ?>" required>
+                                <input maxlength="50" type="text" id="first_name" name="first_name" class="form-control" value="<?= htmlspecialchars($user['first_name']) ?>" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="last_name">Last Name</label>
-                                <input type="text" id="last_name" name="last_name" class="form-control" value="<?= htmlspecialchars($user['last_name']) ?>" required>
+                                <input maxlength="50" type="text" id="last_name" name="last_name" class="form-control" value="<?= htmlspecialchars($user['last_name']) ?>" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="id_number">Student ID Number</label>
-                                <input type="text" id="id_number" name="id_number" class="form-control" value="<?= htmlspecialchars($user['id_number'] ?? '') ?>">
+                                <input maxlength="20" type="text" id="id_number" name="id_number" class="form-control" value="<?= htmlspecialchars($user['id_number'] ?? '') ?>">
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="program">Program / Degree</label>
-                                <input type="text" id="program" name="program" class="form-control" value="<?= htmlspecialchars($user['program_or_dept'] ?? 'BSCS') ?>">
+                                <input maxlength="50" type="text" id="program" name="program" class="form-control" value="<?= htmlspecialchars($user['program_or_dept'] ?? 'BSCS') ?>">
                             </div>
                             <button type="submit" class="btn btn-success" style="width:100%;">Save Profile</button>
                         </form>
@@ -456,19 +368,20 @@ $facultySchedules = $stmtAvail->fetchAll();
                     <div class="panel-card">
                         <h3 class="panel-card-title">Change Password</h3>
                         <form method="POST" action="student.php?tab=settings">
+                            <?= App::csrfField() ?>
                             <input type="hidden" name="action" value="change_password">
 
                             <div class="form-group">
                                 <label class="form-label" for="current_password">Current Password</label>
-                                <input type="password" id="current_password" name="current_password" class="form-control" required>
+                                <input autocomplete="current-password" type="password" id="current_password" name="current_password" class="form-control" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="new_password">New Password</label>
-                                <input type="password" id="new_password" name="new_password" class="form-control" minlength="6" required>
+                                <input autocomplete="new-password" maxlength="64" type="password" id="new_password" name="new_password" class="form-control" minlength="6" required>
                             </div>
                             <div class="form-group">
                                 <label class="form-label" for="confirm_password">Confirm New Password</label>
-                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" minlength="6" required>
+                                <input autocomplete="new-password" maxlength="64" type="password" id="confirm_password" name="confirm_password" class="form-control" minlength="6" required>
                             </div>
                             <button type="submit" class="btn btn-primary" style="width:100%;">Change Password</button>
                         </form>
@@ -477,6 +390,8 @@ $facultySchedules = $stmtAvail->fetchAll();
             <?php endif; ?>
         </div>
     </main>
+    <?= App::formState() ?>
+    <script src="assets/validation.js" defer></script>
 </body>
 </html>
 

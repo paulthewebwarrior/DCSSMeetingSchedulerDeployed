@@ -12,8 +12,8 @@ $studentCount = $db->query("SELECT COUNT(*) FROM users WHERE role = 'Student'")-
 $totalAppts   = $db->query("SELECT COUNT(*) FROM appointments")->fetchColumn();
 $pendingAppts = $db->query("SELECT COUNT(*) FROM appointments WHERE status = 'Pending'")->fetchColumn();
 
-$userSearch = trim($_GET['user_search'] ?? '');
-$roleFilter = $_GET['role_filter'] ?? 'All';
+$userSearch = Validation::text($_GET, 'user_search', 'User search', 100, false);
+$roleFilter = Validation::choice($_GET, 'role_filter', ['All', 'Admin', 'Faculty', 'Student'], 'All');
 
 $uQuery = "SELECT user_id, ue_email, first_name, last_name, role, id_number, program_or_dept, is_active FROM users WHERE 1=1";
 $uParams = [];
@@ -22,8 +22,8 @@ if ($roleFilter !== 'All') {
     $uParams[':role'] = $roleFilter;
 }
 if (!empty($userSearch)) {
-    $uQuery .= " AND (first_name LIKE :s OR last_name LIKE :s OR ue_email LIKE :s OR id_number LIKE :s)";
-    $uParams[':s'] = "%{$userSearch}%";
+    $uQuery .= " AND (first_name LIKE :s1 OR last_name LIKE :s2 OR ue_email LIKE :s3 OR id_number LIKE :s4)";
+    foreach (range(1, 4) as $i) { $uParams[':s' . $i] = "%{$userSearch}%"; }
 }
 $uQuery .= " ORDER BY role, last_name, first_name";
 $stmtUsers = $db->prepare($uQuery);
@@ -52,13 +52,15 @@ $usersList = $stmtUsers->fetchAll();
                 <span><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></span>
                 <span class="role-tag"><?= htmlspecialchars($user['role']) ?></span>
             </div>
-            <a href="logout.php" class="btn-logout" onclick="return confirm('Log out from Admin session?');">
-                Log Out
-            </a>
+            <form method="POST" action="logout.php" onsubmit="return confirm('Log out from Admin session?');" style="margin:0;">
+                <?= App::csrfField() ?>
+                <button type="submit" class="btn-logout">Log Out</button>
+            </form>
         </div>
     </header>
 
     <main class="main-wrapper">
+        <?= Flash::render() ?>
         <div class="section-banner">
             <h2>Administrative Overview</h2>
             <p>System metrics, user accounts, and appointment tracking</p>
@@ -91,7 +93,7 @@ $usersList = $stmtUsers->fetchAll();
             <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:12px; margin-bottom:14px;">
                 <h3 class="panel-card-title" style="margin:0; border:none; padding:0;">User Management</h3>
                 <form method="GET" action="admin.php" style="display:flex; gap:8px; flex-wrap:wrap;">
-                    <input type="text" name="user_search" class="input-search" placeholder="Search name or email..." value="<?= htmlspecialchars($userSearch) ?>">
+                    <input maxlength="100" type="text" name="user_search" class="input-search" placeholder="Search name or email..." value="<?= htmlspecialchars($userSearch) ?>">
                     <select name="role_filter" class="select-filter" onchange="this.form.submit()">
                         <option value="All" <?= $roleFilter === 'All' ? 'selected' : '' ?>>All Roles</option>
                         <option value="Admin" <?= $roleFilter === 'Admin' ? 'selected' : '' ?>>Admin</option>
@@ -119,6 +121,9 @@ $usersList = $stmtUsers->fetchAll();
                         </tr>
                     </thead>
                     <tbody>
+                        <?php if (!$usersList): ?>
+                            <tr><td colspan="7" style="text-align:center; padding:24px;">No users match your search. Try another name, email, or role.</td></tr>
+                        <?php endif; ?>
                         <?php foreach ($usersList as $u): ?>
                             <tr>
                                 <td><strong>#<?= htmlspecialchars($u['user_id']) ?></strong></td>
@@ -143,6 +148,8 @@ $usersList = $stmtUsers->fetchAll();
             </div>
         </div>
     </main>
+    <?= App::formState() ?>
+    <script src="assets/validation.js" defer></script>
 </body>
 </html>
 

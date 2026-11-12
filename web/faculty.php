@@ -2,147 +2,12 @@
 require_once __DIR__ . '/includes/Database.php';
 require_once __DIR__ . '/includes/Auth.php';
 require_once __DIR__ . '/includes/Flash.php';
+require_once __DIR__ . '/includes/Actions.php';
 
 $user = Auth::requireRole('Faculty');
 $db = Database::getConnection();
-
-$stmt = $db->prepare("SELECT * FROM users WHERE user_id = :id");
-$stmt->execute([':id' => $user['user_id']]);
-$user = $stmt->fetch();
-$_SESSION['user'] = $user;
-
-$currentTab = $_GET['tab'] ?? 'home';
-
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $action = $_POST['action'] ?? '';
-
-    if ($action === 'update_profile') {
-        $fullName = trim($_POST['full_name'] ?? '');
-        $department = trim($_POST['department'] ?? '');
-
-        if (empty($fullName) || empty($department)) {
-            Flash::set('error', 'Please fill in both name and department fields.');
-        } else {
-            $firstName = $fullName;
-            $lastName = '';
-            $spacePos = strpos($fullName, ' ');
-            if ($spacePos !== false) {
-                $firstName = substr($fullName, 0, $spacePos);
-                $lastName = trim(substr($fullName, $spacePos + 1));
-            }
-
-            $stmt = $db->prepare("UPDATE users SET first_name = :fname, last_name = :lname, program_or_dept = :dept WHERE user_id = :id");
-            $stmt->execute([
-                ':fname' => $firstName,
-                ':lname' => $lastName,
-                ':dept'  => $department,
-                ':id'    => $user['user_id']
-            ]);
-            Flash::set('success', 'Profile updated successfully!');
-        }
-        header('Location: faculty.php?tab=setting');
-        exit;
-    }
-
-    if ($action === 'change_password') {
-        $currentPass = trim($_POST['current_password'] ?? '');
-        $newPass     = trim($_POST['new_password'] ?? '');
-        $confirmPass = trim($_POST['confirm_password'] ?? '');
-
-        if (empty($currentPass) || empty($newPass) || empty($confirmPass)) {
-            Flash::set('error', 'Please fill in all password fields.');
-        } elseif ($currentPass !== $user['user_password']) {
-            Flash::set('error', 'Current password is incorrect.');
-        } elseif (strlen($newPass) < 6) {
-            Flash::set('error', 'New password must be at least 6 characters long.');
-        } elseif ($newPass === $currentPass) {
-            Flash::set('error', 'New password cannot be the same as your current password.');
-        } elseif ($newPass !== $confirmPass) {
-            Flash::set('error', 'New password and confirm password do not match.');
-        } else {
-            $stmt = $db->prepare("UPDATE users SET user_password = :pwd, must_change_password = 0 WHERE user_id = :id");
-            $stmt->execute([':pwd' => $newPass, ':id' => $user['user_id']]);
-            Flash::set('success', 'Password changed successfully!');
-        }
-        header('Location: faculty.php?tab=setting');
-        exit;
-    }
-
-    if ($action === 'save_availability') {
-        $availId   = (int)($_POST['availability_id'] ?? -1);
-        $day       = trim($_POST['day'] ?? '');
-        $startTime = trim($_POST['start_time'] ?? '');
-        $endTime   = trim($_POST['end_time'] ?? '');
-        $location  = trim($_POST['location'] ?? '');
-
-        if (empty($day)) {
-            Flash::set('error', 'Please select a day of the week.');
-        } elseif (strtotime($startTime) >= strtotime($endTime)) {
-            Flash::set('error', 'Start time must be earlier than end time.');
-        } else {
-            if ($availId === -1) {
-                $stmt = $db->prepare("
-                    INSERT INTO faculty_availability (faculty_id, days, start_time, end_time, location)
-                    VALUES (:fid, :day, :start, :end, :loc)
-                ");
-                $stmt->execute([
-                    ':fid'   => $user['user_id'],
-                    ':day'   => $day,
-                    ':start' => $startTime,
-                    ':end'   => $endTime,
-                    ':loc'   => $location
-                ]);
-                Flash::set('success', 'Consultation hours added successfully!');
-            } else {
-                $stmt = $db->prepare("
-                    UPDATE faculty_availability
-                    SET days = :day, start_time = :start, end_time = :end, location = :loc
-                    WHERE availability_id = :id AND faculty_id = :fid
-                ");
-                $stmt->execute([
-                    ':day'   => $day,
-                    ':start' => $startTime,
-                    ':end'   => $endTime,
-                    ':loc'   => $location,
-                    ':id'    => $availId,
-                    ':fid'   => $user['user_id']
-                ]);
-                Flash::set('success', 'Consultation hours updated successfully!');
-            }
-        }
-        header('Location: faculty.php?tab=availability');
-        exit;
-    }
-
-    if ($action === 'delete_availability') {
-        $availId = (int)($_POST['availability_id'] ?? -1);
-        if ($availId > 0) {
-            $stmt = $db->prepare("DELETE FROM faculty_availability WHERE availability_id = :id AND faculty_id = :fid");
-            $stmt->execute([':id' => $availId, ':fid' => $user['user_id']]);
-            Flash::set('success', 'Consultation hours deleted successfully!');
-        }
-        header('Location: faculty.php?tab=availability');
-        exit;
-    }
-
-    if ($action === 'update_request_status') {
-        $appId  = (int)($_POST['appointment_id'] ?? -1);
-        $status = $_POST['status'] ?? '';
-        $allowed = ['Approved', 'Declined', 'Completed'];
-
-        if ($appId > 0 && in_array($status, $allowed, true)) {
-            $stmt = $db->prepare("UPDATE appointments SET status = :status, is_student_notified = 0 WHERE appointment_id = :id AND faculty_id = :fid");
-            $stmt->execute([
-                ':status' => $status,
-                ':id'     => $appId,
-                ':fid'    => $user['user_id']
-            ]);
-            Flash::set('success', "Request marked as {$status}!");
-        }
-        header('Location: faculty.php?tab=' . urlencode($currentTab));
-        exit;
-    }
-}
+$currentTab = Validation::choice($_GET, 'tab', ['home', 'request', 'availability', 'setting'], 'home');
+Actions::handle($db, $user, 'faculty', $currentTab);
 
 $stmtStats = $db->prepare("
     SELECT 
@@ -182,8 +47,8 @@ $stmtRecent = $db->prepare("
 $stmtRecent->execute([':fid' => $user['user_id']]);
 $recentMeetings = $stmtRecent->fetchAll();
 
-$searchKeyword = trim($_GET['search'] ?? '');
-$statusFilter  = $_GET['status_filter'] ?? 'All';
+$searchKeyword = Validation::text($_GET, 'search', 'Search', 100, false);
+$statusFilter = Validation::choice($_GET, 'status_filter', ['All', 'Pending', 'Approved', 'Declined', 'Completed', 'Cancelled'], 'All');
 
 $reqQuery = "
     SELECT a.appointment_id,
@@ -204,8 +69,8 @@ if (!empty($statusFilter) && $statusFilter !== 'All') {
     $params[':status'] = $statusFilter;
 }
 if (!empty($searchKeyword)) {
-    $reqQuery .= " AND (u.first_name LIKE :s OR u.last_name LIKE :s OR CONCAT(u.first_name, ' ', u.last_name) LIKE :s OR u.program_or_dept LIKE :s OR a.purpose LIKE :s)";
-    $params[':s'] = "%{$searchKeyword}%";
+    $reqQuery .= " AND (u.first_name LIKE :s1 OR u.last_name LIKE :s2 OR CONCAT(u.first_name, ' ', u.last_name) LIKE :s3 OR u.program_or_dept LIKE :s4 OR a.purpose LIKE :s5)";
+    foreach (range(1, 5) as $i) { $params[':s' . $i] = "%{$searchKeyword}%"; }
 }
 $reqQuery .= " ORDER BY a.meeting_datetime DESC";
 
@@ -213,7 +78,7 @@ $stmtReq = $db->prepare($reqQuery);
 $stmtReq->execute($params);
 $requestsList = $stmtReq->fetchAll();
 
-$availSearch = trim($_GET['avail_search'] ?? '');
+$availSearch = Validation::text($_GET, 'avail_search', 'Availability search', 100, false);
 $availQuery = "
     SELECT availability_id,
            days,
@@ -227,8 +92,8 @@ $availQuery = "
 ";
 $availParams = [':fid' => $user['user_id']];
 if (!empty($availSearch)) {
-    $availQuery .= " AND (days LIKE :as OR location LIKE :as)";
-    $availParams[':as'] = "%{$availSearch}%";
+    $availQuery .= " AND (days LIKE :as1 OR location LIKE :as2)";
+    $availParams[':as1'] = $availParams[':as2'] = "%{$availSearch}%";
 }
 $availQuery .= " ORDER BY FIELD(days, 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'), start_time";
 $stmtAvail = $db->prepare($availQuery);
@@ -257,9 +122,10 @@ $availabilityList = $stmtAvail->fetchAll();
                 <span><?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?></span>
                 <span class="role-tag"><?= htmlspecialchars($user['role']) ?></span>
             </div>
-            <a href="logout.php" class="btn-logout" onclick="return confirm('Are you sure you want to log out?');">
-                Log Out
-            </a>
+            <form method="POST" action="logout.php" onsubmit="return confirm('Are you sure you want to log out?');" style="margin:0;">
+                <?= App::csrfField() ?>
+                <button type="submit" class="btn-logout">Log Out</button>
+            </form>
         </div>
     </header>
 
@@ -390,7 +256,7 @@ $availabilityList = $stmtAvail->fetchAll();
                 <form method="GET" action="faculty.php" class="toolbar-row">
                     <input type="hidden" name="tab" value="request">
                     <div class="filter-group">
-                        <input type="text" name="search" class="input-search" 
+                        <input maxlength="100" type="text" name="search" class="input-search" 
                                placeholder="Search student, program, or purpose..." 
                                value="<?= htmlspecialchars($searchKeyword) ?>" style="min-width:280px;">
                         
@@ -447,12 +313,14 @@ $availabilityList = $stmtAvail->fetchAll();
                                         <td style="text-align:right;">
                                             <?php if ($r['status'] === 'Pending'): ?>
                                                 <form method="POST" style="display:inline-block;" onsubmit="return confirm('Approve this consultation request?');">
+                            <?= App::csrfField() ?>
                                                     <input type="hidden" name="action" value="update_request_status">
                                                     <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
                                                     <input type="hidden" name="status" value="Approved">
                                                     <button type="submit" class="btn btn-success" style="padding:4px 10px; font-size:12px;">Approve</button>
                                                 </form>
                                                 <form method="POST" style="display:inline-block;" onsubmit="return confirm('Decline this consultation request?');">
+                            <?= App::csrfField() ?>
                                                     <input type="hidden" name="action" value="update_request_status">
                                                     <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
                                                     <input type="hidden" name="status" value="Declined">
@@ -460,6 +328,7 @@ $availabilityList = $stmtAvail->fetchAll();
                                                 </form>
                                             <?php elseif ($r['status'] === 'Approved'): ?>
                                                 <form method="POST" style="display:inline-block;" onsubmit="return confirm('Mark this meeting as completed?');">
+                            <?= App::csrfField() ?>
                                                     <input type="hidden" name="action" value="update_request_status">
                                                     <input type="hidden" name="appointment_id" value="<?= (int)$r['appointment_id'] ?>">
                                                     <input type="hidden" name="status" value="Completed">
@@ -486,6 +355,7 @@ $availabilityList = $stmtAvail->fetchAll();
                     <div class="panel-card">
                         <h3 class="panel-card-title" id="avail-form-title">Add Consultation Hours</h3>
                         <form method="POST" action="faculty.php?tab=availability" id="avail-form">
+                            <?= App::csrfField() ?>
                             <input type="hidden" name="action" value="save_availability">
                             <input type="hidden" name="availability_id" id="avail_id" value="-1">
 
@@ -514,7 +384,7 @@ $availabilityList = $stmtAvail->fetchAll();
 
                             <div class="form-group">
                                 <label class="form-label" for="location">Location (Optional)</label>
-                                <input type="text" name="location" id="location" class="form-control" placeholder="e.g. Room 101, Online via MS Teams">
+                                <input maxlength="100" type="text" name="location" id="location" class="form-control" placeholder="e.g. Room 101, Online via MS Teams">
                             </div>
 
                             <div class="form-actions">
@@ -533,7 +403,7 @@ $availabilityList = $stmtAvail->fetchAll();
                             <h3 class="panel-card-title" style="margin-bottom:0; border:none; padding:0;">Weekly Consultation Hours</h3>
                             <form method="GET" action="faculty.php" style="display:flex; gap:8px;">
                                 <input type="hidden" name="tab" value="availability">
-                                <input type="text" name="avail_search" class="input-search" placeholder="Search day or location..." value="<?= htmlspecialchars($availSearch) ?>">
+                                <input maxlength="100" type="text" name="avail_search" class="input-search" placeholder="Search day or location..." value="<?= htmlspecialchars($availSearch) ?>">
                                 <button type="submit" class="btn btn-primary" style="padding:6px 12px; font-size:13px;">Search</button>
                                 <?php if (!empty($availSearch)): ?>
                                     <a href="?tab=availability" class="btn btn-secondary" style="padding:6px 12px; font-size:13px;">Reset</a>
@@ -568,10 +438,11 @@ $availabilityList = $stmtAvail->fetchAll();
                                                 <td><?= htmlspecialchars($av['location'] ?: 'Not Specified') ?></td>
                                                 <td style="text-align:right;">
                                                     <button type="button" class="btn btn-primary" style="padding:4px 10px; font-size:12px;"
-                                                            onclick='populateAvailForm(<?= json_encode($av) ?>)'>
+                                                            onclick='populateAvailForm(<?= json_encode($av, JSON_HEX_TAG | JSON_HEX_APOS | JSON_HEX_AMP | JSON_HEX_QUOT) ?>)'>
                                                         Edit
                                                     </button>
                                                     <form method="POST" style="display:inline-block;" onsubmit="return confirm('Delete this consultation schedule?');">
+                            <?= App::csrfField() ?>
                                                         <input type="hidden" name="action" value="delete_availability">
                                                         <input type="hidden" name="availability_id" value="<?= (int)$av['availability_id'] ?>">
                                                         <button type="submit" class="btn btn-danger" style="padding:4px 10px; font-size:12px;">Delete</button>
@@ -599,11 +470,12 @@ $availabilityList = $stmtAvail->fetchAll();
                     <div class="panel-card">
                         <h3 class="panel-card-title">Faculty Profile</h3>
                         <form method="POST" action="faculty.php?tab=setting">
+                            <?= App::csrfField() ?>
                             <input type="hidden" name="action" value="update_profile">
 
                             <div class="form-group">
                                 <label class="form-label" for="full_name">Full Name</label>
-                                <input type="text" id="full_name" name="full_name" class="form-control" 
+                                <input maxlength="101" type="text" id="full_name" name="full_name" class="form-control" 
                                        value="<?= htmlspecialchars($user['first_name'] . ' ' . $user['last_name']) ?>" required>
                             </div>
 
@@ -614,7 +486,7 @@ $availabilityList = $stmtAvail->fetchAll();
 
                             <div class="form-group">
                                 <label class="form-label" for="department">Department</label>
-                                <input type="text" id="department" name="department" class="form-control" 
+                                <input maxlength="50" type="text" id="department" name="department" class="form-control" 
                                        value="<?= htmlspecialchars($user['program_or_dept'] ?? '') ?>" required>
                             </div>
 
@@ -632,21 +504,22 @@ $availabilityList = $stmtAvail->fetchAll();
                     <div class="panel-card">
                         <h3 class="panel-card-title">Change Password</h3>
                         <form method="POST" action="faculty.php?tab=setting">
+                            <?= App::csrfField() ?>
                             <input type="hidden" name="action" value="change_password">
 
                             <div class="form-group">
                                 <label class="form-label" for="current_password">Current Password</label>
-                                <input type="password" id="current_password" name="current_password" class="form-control" required>
+                                <input autocomplete="current-password" type="password" id="current_password" name="current_password" class="form-control" required>
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label" for="new_password">New Password</label>
-                                <input type="password" id="new_password" name="new_password" class="form-control" required minlength="6">
+                                <input autocomplete="new-password" maxlength="64" type="password" id="new_password" name="new_password" class="form-control" required minlength="6">
                             </div>
 
                             <div class="form-group">
                                 <label class="form-label" for="confirm_password">Confirm New Password</label>
-                                <input type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="6">
+                                <input autocomplete="new-password" maxlength="64" type="password" id="confirm_password" name="confirm_password" class="form-control" required minlength="6">
                             </div>
 
                             <button type="submit" class="btn btn-primary" style="width:100%; margin-top:10px;">
@@ -696,6 +569,8 @@ $availabilityList = $stmtAvail->fetchAll();
         document.getElementById('btn-save-avail').innerText = '+ Add';
     }
     </script>
+    <?= App::formState() ?>
+    <script src="assets/validation.js" defer></script>
 </body>
 </html>
 

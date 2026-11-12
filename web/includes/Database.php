@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/bootstrap.php';
 
 class Database {
     private static ?PDO $instance = null;
@@ -16,8 +16,7 @@ class Database {
             try {
                 self::$instance = new PDO($dsn, $config['username'], $config['password'], $options);
             } catch (PDOException $e) {
-                http_response_code(500);
-                die("Database connection failed. Please verify your database settings in config/database.php.");
+                throw $e;
             }
         }
         return self::$instance;
